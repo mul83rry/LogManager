@@ -6,6 +6,7 @@ import {
   todayInputValue,
 } from '../ui/util.js';
 import { buildTextExport } from '../lib/format.js';
+import { renderTasks, updateElapsed } from '../ui/tasks.js';
 
 // ─── element refs ──────────────────────────────────────────────────────────
 const els = {
@@ -30,7 +31,6 @@ els.from.value = todayInputValue();
 els.to.value = todayInputValue();
 
 let state = null;
-let tick = null;
 
 // ─── tabs ───────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach((btn) =>
@@ -72,89 +72,10 @@ async function refreshTasks() {
   try {
     state = await send('getState');
     showError('');
-    renderActive();
-    renderTasks();
+    renderTasks(els.activeList, els.taskList, state, refreshTasks);
   } catch (err) {
     showError(err.message);
   }
-}
-
-function renderActive() {
-  const timers = state.activeTimers;
-  els.activeList.innerHTML = '';
-  if (timers.length === 0) return; // hide the section when nothing is running
-  for (const t of timers) {
-    const div = document.createElement('div');
-    div.className = 'timer';
-    div.innerHTML = `
-      <div class="grow">
-        <div style="font-size:.9rem">${escapeHtml(t.subtaskTitle)}</div>
-        <div class="muted">${escapeHtml(t.taskTitle)}</div>
-      </div>
-      <span class="elapsed mono" data-start="${t.startTimestamp}">00:00</span>
-      <button class="danger" data-stop="${t.subtaskId}">توقف</button>`;
-    els.activeList.appendChild(div);
-  }
-  els.activeList.querySelectorAll('[data-stop]').forEach((btn) =>
-    btn.addEventListener('click', async () => {
-      await send('stopTimer', { subtaskId: btn.dataset.stop });
-      await refreshTasks();
-    }),
-  );
-  updateElapsed();
-}
-
-function renderTasks() {
-  const tasks = state.file.tasks;
-  const running = new Set(state.activeTimers.map((t) => t.subtaskId));
-  els.taskList.innerHTML = '';
-  if (tasks.length === 0) {
-    els.taskList.innerHTML = '<div class="empty">هنوز تسکی نساخته‌اید.<br>از فرم پایین شروع کنید.</div>';
-    return;
-  }
-  for (const task of tasks) {
-    const card = document.createElement('div');
-    card.className = 'task';
-    const head = document.createElement('div');
-    head.className = 'row between';
-    head.innerHTML = `<span class="title">${escapeHtml(task.title)}</span>`;
-    const addBtn = document.createElement('button');
-    addBtn.className = 'ghost';
-    addBtn.style.fontSize = '0.8rem';
-    addBtn.textContent = '+ ساب‌تسک';
-    addBtn.addEventListener('click', () => promptInline(card, 'نام ساب‌تسک', async (title) => {
-      await send('addSubtask', { taskId: task.id, title });
-      await refreshTasks();
-    }));
-    head.appendChild(addBtn);
-    card.appendChild(head);
-
-    for (const sub of task.subtasks) {
-      const row = document.createElement('div');
-      row.className = 'subtask';
-      const isRunning = running.has(sub.id);
-      row.innerHTML = `<span class="name grow">${escapeHtml(sub.title)}</span>`;
-      const btn = document.createElement('button');
-      btn.style.fontSize = '0.8rem';
-      btn.className = isRunning ? 'danger' : 'success';
-      btn.textContent = isRunning ? 'توقف' : 'شروع';
-      btn.addEventListener('click', async () => {
-        if (isRunning) await send('stopTimer', { subtaskId: sub.id });
-        else await send('startTimer', { taskId: task.id, subtaskId: sub.id });
-        await refreshTasks();
-      });
-      row.appendChild(btn);
-      card.appendChild(row);
-    }
-    els.taskList.appendChild(card);
-  }
-}
-
-function updateElapsed() {
-  els.activeList.querySelectorAll('.elapsed').forEach((el) => {
-    const seconds = (Date.now() - new Date(el.dataset.start).getTime()) / 1000;
-    el.textContent = formatDuration(seconds);
-  });
 }
 
 // ─── report tab logic ────────────────────────────────────────────────────────
@@ -271,33 +192,6 @@ function showError(err) {
   els.error.hidden = !err;
 }
 
-function promptInline(container, placeholder, onSubmit) {
-  if (container.querySelector('.inline-prompt')) return;
-  const wrap = document.createElement('div');
-  wrap.className = 'inline-prompt row';
-  wrap.style.marginTop = '0.4rem';
-  const input = document.createElement('input');
-  input.className = 'grow';
-  input.placeholder = placeholder;
-  const ok = document.createElement('button');
-  ok.className = 'primary';
-  ok.style.fontSize = '0.8rem';
-  ok.textContent = 'ذخیره';
-  const submit = async () => {
-    const value = input.value.trim();
-    if (value) await onSubmit(value);
-    wrap.remove();
-  };
-  ok.addEventListener('click', submit);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') submit();
-    if (e.key === 'Escape') wrap.remove();
-  });
-  wrap.append(input, ok);
-  container.appendChild(wrap);
-  input.focus();
-}
-
 function toInputValue(date) {
   return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
@@ -311,8 +205,8 @@ function flash(btn, text) {
 }
 
 // ─── init ────────────────────────────────────────────────────────────────────
+let tick = null;
 refreshTasks();
-tick = setInterval(updateElapsed, 1000);
+tick = setInterval(() => updateElapsed(els.activeList), 1000);
 window.addEventListener('unload', () => clearInterval(tick));
-// Pre-load this week's report silently so it's ready when user switches tab.
 applyPreset('this-week');

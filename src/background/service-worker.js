@@ -76,13 +76,18 @@ async function startTimer(taskId, subtaskId) {
   const subtask = task?.subtasks.find((s) => s.id === subtaskId);
   if (!task || !subtask) throw new Error('Task or subtask not found.');
 
-  const timers = await getActiveTimers();
-  if (timers.some((t) => t.subtaskId === subtaskId)) {
+  // Auto-pause: stop every currently running timer before starting the new one.
+  const running = await getActiveTimers();
+  for (const t of running) {
+    if (t.subtaskId !== subtaskId) await stopTimer(t.subtaskId);
+  }
+
+  const fresh = await getActiveTimers();
+  if (fresh.some((t) => t.subtaskId === subtaskId)) {
     return { alreadyRunning: true };
   }
 
   const startTimestamp = new Date().toISOString();
-  // Time inheritance (§3.2): starting a subtask is starting its parent task.
   await appendLog({
     taskId,
     taskTitle: task.title,
@@ -91,14 +96,8 @@ async function startTimer(taskId, subtaskId) {
     type: 'system_start',
     timestamp: startTimestamp,
   });
-  timers.push({
-    taskId,
-    taskTitle: task.title,
-    subtaskId,
-    subtaskTitle: subtask.title,
-    startTimestamp,
-  });
-  await setActiveTimers(timers);
+  fresh.push({ taskId, taskTitle: task.title, subtaskId, subtaskTitle: subtask.title, startTimestamp });
+  await setActiveTimers(fresh);
   return { startTimestamp };
 }
 
