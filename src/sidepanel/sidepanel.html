@@ -9,54 +9,81 @@
   </head>
   <body>
     <header class="row between">
-      <h1>داشبورد</h1>
+      <h1>ردیاب زمان</h1>
       <button id="open-options" class="ghost">تنظیمات</button>
     </header>
 
-    <section class="card filter-card">
-      <button class="filter-toggle row between" id="filter-toggle" aria-expanded="false">
-        <span>فیلتر تاریخ</span>
-        <span class="row" style="gap:0.4rem">
-          <span id="range-summary" class="tag mono"></span>
-          <span class="chevron">▼</span>
-        </span>
-      </button>
-      <div class="filter-body" id="filter-body" hidden>
-        <div class="row presets">
-          <button data-preset="this-week" class="primary">این هفته</button>
-          <button data-preset="last-week" class="ghost">هفته گذشته</button>
-          <button data-preset="last-30" class="ghost">۳۰ روز اخیر</button>
-        </div>
-        <div class="row custom">
-          <label class="grow">از
-            <input type="date" id="from-date" />
-          </label>
-          <label class="grow">تا
-            <input type="date" id="to-date" />
-          </label>
-          <button id="apply-range" class="primary">اعمال</button>
-        </div>
-      </div>
-    </section>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="tasks" role="tab">تسک‌ها</button>
+      <button class="tab" data-tab="report" role="tab">گزارش</button>
+    </nav>
 
-    <section class="card">
-      <div class="row between">
-        <h2>گزارش</h2>
-        <span id="grand-total" class="tag mono"></span>
-      </div>
-      <div id="report"></div>
-    </section>
+    <!-- =================== TAB: تسک‌ها =================== -->
+    <div id="tab-tasks">
 
-    <section class="card">
-      <div class="row between">
-        <h2>خروجی متنی</h2>
-        <div class="row">
-          <button id="copy-text" class="ghost">کپی</button>
-          <button id="download-text" class="ghost">دانلود</button>
+      <section class="card">
+        <div id="active-list"></div>
+      </section>
+
+      <section class="card">
+        <div id="task-list"></div>
+        <div class="add-task-row row">
+          <input type="text" id="new-task-input" class="grow" placeholder="نام تسک جدید…" />
+          <button id="add-task" class="primary">+ تسک</button>
         </div>
-      </div>
-      <textarea id="export-text" rows="8" readonly></textarea>
-    </section>
+      </section>
+
+    </div>
+
+    <!-- =================== TAB: گزارش =================== -->
+    <div id="tab-report" hidden>
+
+      <section class="card filter-card">
+        <button class="filter-toggle row between" id="filter-toggle" aria-expanded="false">
+          <span>فیلتر تاریخ</span>
+          <span class="row" style="gap:0.4rem">
+            <span id="range-summary" class="tag mono"></span>
+            <span class="chevron">▼</span>
+          </span>
+        </button>
+        <div class="filter-body" id="filter-body" hidden>
+          <div class="row presets">
+            <button data-preset="this-week" class="primary">این هفته</button>
+            <button data-preset="last-week" class="ghost">هفته گذشته</button>
+            <button data-preset="last-30" class="ghost">۳۰ روز اخیر</button>
+          </div>
+          <div class="row custom">
+            <label class="grow">از
+              <input type="date" id="from-date" />
+            </label>
+            <label class="grow">تا
+              <input type="date" id="to-date" />
+            </label>
+            <button id="apply-range" class="primary">اعمال</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row between">
+          <h2>گزارش</h2>
+          <span id="grand-total" class="tag mono"></span>
+        </div>
+        <div id="report"></div>
+      </section>
+
+      <section class="card">
+        <div class="row between">
+          <h2>خروجی متنی</h2>
+          <div class="row">
+            <button id="copy-text" class="ghost">کپی</button>
+            <button id="download-text" class="ghost">دانلود</button>
+          </div>
+        </div>
+        <textarea id="export-text" rows="8" readonly></textarea>
+      </section>
+
+    </div>
 
     <p id="error" class="error" hidden></p>
 
