@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>تنظیمات ردیاب زمان</title>
+    <link rel="stylesheet" href="../ui/common.css" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>تنظیمات ردیاب زمان</h1>
+
+      <section class="card">
+        <h2>دستگاه</h2>
+        <p class="muted">شناسه این دستگاه در نام فایل‌های کلاد استفاده می‌شود.</p>
+        <div class="row">
+          <span class="muted">شناسه:</span>
+          <span id="device-id" class="mono"></span>
+        </div>
+        <label class="field">
+          نام دلخواه دستگاه (مثلاً Laptop-Ali)
+          <div class="row">
+            <input type="text" id="device-label" class="grow" placeholder="Laptop-Ali" />
+            <button id="save-label" class="primary">ذخیره</button>
+          </div>
+        </label>
+        <p class="muted">نام فایل هفته جاری: <span id="file-preview" class="mono"></span></p>
+      </section>
+
+      <section class="card">
+        <h2>اتصال به کلاد</h2>
+        <label class="field">
+          محل ذخیره‌سازی
+          <select id="provider">
+            <option value="local">محلی (بدون نیاز به تنظیم)</option>
+            <option value="onedrive">OneDrive</option>
+          </select>
+        </label>
+
+        <div id="onedrive-config" hidden>
+          <label class="field">
+            شناسه کلاینت (Client ID) برنامه Azure
+            <input type="text" id="client-id" class="grow" placeholder="00000000-0000-0000-0000-000000000000" />
+          </label>
+          <p class="muted">
+            این آدرس را به‌عنوان Redirect URI در Azure ثبت کنید:
+            <code id="redirect-uri" class="mono"></code>
+          </p>
+        </div>
+
+        <div class="row">
+          <button id="save-provider" class="primary">ذخیره تنظیمات</button>
+          <button id="connect" class="success" hidden>اتصال به OneDrive</button>
+          <button id="disconnect" class="danger" hidden>قطع اتصال</button>
+          <span id="cloud-status" class="tag"></span>
+        </div>
+      </section>
+
+      <p id="message" class="muted" role="status"></p>
+      <p id="error" class="error" hidden></p>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

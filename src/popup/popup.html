@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ردیاب زمان</title>
+    <link rel="stylesheet" href="../ui/common.css" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="row between">
+      <h1>ردیاب زمان</h1>
+      <div class="row">
+        <span id="week-label" class="tag mono"></span>
+        <button id="open-dashboard" class="ghost" title="داشبورد">داشبورد</button>
+      </div>
+    </header>
+
+    <section id="active" class="card">
+      <h2>تایمرهای فعال</h2>
+      <div id="active-list"></div>
+    </section>
+
+    <section class="card">
+      <div class="row between">
+        <h2>تسک‌های این هفته</h2>
+        <button id="add-task" class="primary">+ تسک</button>
+      </div>
+      <div id="task-list"></div>
+    </section>
+
+    <p id="error" class="error" hidden></p>
+    <p class="muted" id="device-line"></p>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

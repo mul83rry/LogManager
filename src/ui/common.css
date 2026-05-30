@@ -1,0 +1,90 @@
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #273449;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --primary: #3b82f6;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --border: #334155;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  margin: 0;
+  font-family: 'Vazirmatn', 'Segoe UI', Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  direction: rtl;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.45rem 0.9rem;
+  background: var(--surface-2);
+  color: var(--text);
+  transition: filter 0.15s ease;
+}
+button:hover { filter: brightness(1.15); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+button.primary { background: var(--primary); color: #fff; }
+button.success { background: var(--success); color: #fff; }
+button.danger { background: var(--danger); color: #fff; }
+button.ghost { background: transparent; border: 1px solid var(--border); }
+
+input,
+select,
+textarea {
+  font: inherit;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.6rem;
+}
+input:focus,
+textarea:focus,
+select:focus { outline: 2px solid var(--primary); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.row.between { justify-content: space-between; }
+.grow { flex: 1; }
+.muted { color: var(--muted); font-size: 0.85rem; }
+.mono { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+.tag {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.tag.live { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+.error { color: #fca5a5; font-size: 0.85rem; }
+.empty { color: var(--muted); text-align: center; padding: 1.5rem 0; }

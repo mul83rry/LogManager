@@ -1,0 +1,37 @@
+body {
+  padding: 0.85rem;
+  min-width: 320px;
+}
+
+.presets { margin-bottom: 0.6rem; }
+.custom label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.report-task {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem;
+  margin-bottom: 0.5rem;
+}
+.report-task > .row { margin-bottom: 0.3rem; }
+.report-task .title { font-weight: 600; }
+.report-sub {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+.report-sub .dur { color: var(--text); }
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: 'Consolas', monospace;
+  line-height: 1.6;
+}

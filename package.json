@@ -1,0 +1,12 @@
+{
+  "name": "edge-time-tracker",
+  "version": "4.0.0",
+  "description": "Microsoft Edge extension for tracking work time on projects using a sharded cloud-file architecture.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "icons": "node scripts/generate-icons.mjs"
+  },
+  "license": "MIT"
+}
