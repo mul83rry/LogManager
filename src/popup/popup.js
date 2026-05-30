@@ -5,6 +5,7 @@ const els = {
   weekLabel: document.getElementById('week-label'),
   activeList: document.getElementById('active-list'),
   taskList: document.getElementById('task-list'),
+  newTaskInput: document.getElementById('new-task-input'),
   error: document.getElementById('error'),
   deviceLine: document.getElementById('device-line'),
 };
@@ -23,11 +24,21 @@ document.getElementById('open-dashboard').addEventListener('click', async () => 
   }
 });
 
-document.getElementById('add-task').addEventListener('click', () => {
-  promptInline(els.taskList, 'نام تسک جدید', async (title) => {
+async function submitNewTask() {
+  const title = els.newTaskInput.value.trim();
+  if (!title) { els.newTaskInput.focus(); return; }
+  try {
     await send('addTask', { title });
+    els.newTaskInput.value = '';
     await refresh();
-  });
+    els.newTaskInput.focus();
+  } catch (err) {
+    showError(err.message);
+  }
+}
+document.getElementById('add-task').addEventListener('click', submitNewTask);
+els.newTaskInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitNewTask();
 });
 
 function showError(message) {

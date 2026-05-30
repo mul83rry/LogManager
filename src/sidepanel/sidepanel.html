@@ -13,23 +13,30 @@
       <button id="open-options" class="ghost">تنظیمات</button>
     </header>
 
-    <section class="card">
-      <h2>فیلتر تاریخ</h2>
-      <div class="row presets">
-        <button data-preset="this-week" class="primary">این هفته</button>
-        <button data-preset="last-week" class="ghost">هفته گذشته</button>
-        <button data-preset="last-30" class="ghost">۳۰ روز اخیر</button>
+    <section class="card filter-card">
+      <button class="filter-toggle row between" id="filter-toggle" aria-expanded="false">
+        <span>فیلتر تاریخ</span>
+        <span class="row" style="gap:0.4rem">
+          <span id="range-summary" class="tag mono"></span>
+          <span class="chevron">▼</span>
+        </span>
+      </button>
+      <div class="filter-body" id="filter-body" hidden>
+        <div class="row presets">
+          <button data-preset="this-week" class="primary">این هفته</button>
+          <button data-preset="last-week" class="ghost">هفته گذشته</button>
+          <button data-preset="last-30" class="ghost">۳۰ روز اخیر</button>
+        </div>
+        <div class="row custom">
+          <label class="grow">از
+            <input type="date" id="from-date" />
+          </label>
+          <label class="grow">تا
+            <input type="date" id="to-date" />
+          </label>
+          <button id="apply-range" class="primary">اعمال</button>
+        </div>
       </div>
-      <div class="row custom">
-        <label class="grow">از
-          <input type="date" id="from-date" />
-        </label>
-        <label class="grow">تا
-          <input type="date" id="to-date" />
-        </label>
-        <button id="apply-range" class="primary">اعمال</button>
-      </div>
-      <p class="muted" id="range-summary"></p>
     </section>
 
     <section class="card">

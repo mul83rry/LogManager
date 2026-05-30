@@ -11,6 +11,8 @@ const els = {
   from: document.getElementById('from-date'),
   to: document.getElementById('to-date'),
   rangeSummary: document.getElementById('range-summary'),
+  filterToggle: document.getElementById('filter-toggle'),
+  filterBody: document.getElementById('filter-body'),
   report: document.getElementById('report'),
   grandTotal: document.getElementById('grand-total'),
   exportText: document.getElementById('export-text'),
@@ -19,6 +21,13 @@ const els = {
 
 els.from.value = todayInputValue();
 els.to.value = todayInputValue();
+
+// --- filter toggle -----------------------------------------------------------
+els.filterToggle.addEventListener('click', () => {
+  const open = els.filterToggle.getAttribute('aria-expanded') === 'true';
+  els.filterToggle.setAttribute('aria-expanded', String(!open));
+  els.filterBody.hidden = open;
+});
 
 document.getElementById('open-options').addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
@@ -83,8 +92,12 @@ async function loadRange(from, to) {
       toDate: to.toISOString(),
     });
     renderReport(report);
-    els.rangeSummary.textContent =
+    const dateLabel =
       `${formatJalaliDateTime(from).split(' ')[0]} تا ${formatJalaliDateTime(to).split(' ')[0]}`;
+    els.rangeSummary.textContent = dateLabel;
+    // Collapse the filter panel after applying.
+    els.filterToggle.setAttribute('aria-expanded', 'false');
+    els.filterBody.hidden = true;
   } catch (err) {
     els.error.textContent = err.message;
     els.error.hidden = false;

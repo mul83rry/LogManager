@@ -3,7 +3,36 @@ body {
   min-width: 320px;
 }
 
-.presets { margin-bottom: 0.6rem; }
+/* filter card */
+.filter-card { padding: 0; overflow: hidden; }
+
+.filter-toggle {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0.65rem 0.75rem;
+  text-align: right;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: pointer;
+}
+.filter-toggle:hover { background: var(--surface-2); }
+.filter-toggle .chevron {
+  font-size: 0.7rem;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+  display: inline-block;
+}
+.filter-toggle[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+.filter-body {
+  padding: 0 0.75rem 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.presets { margin: 0.5rem 0; }
 .custom label {
   display: flex;
   flex-direction: column;
