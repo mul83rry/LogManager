@@ -1,20 +1,14 @@
 import { send } from '../ui/messaging.js';
-import {
-  formatDuration,
-  formatJalaliDateTime,
-  escapeHtml,
-  todayInputValue,
-} from '../ui/util.js';
+import { formatDuration, formatJalaliDateTime, escapeHtml, todayInputValue } from '../ui/util.js';
 import { buildTextExport } from '../lib/format.js';
 import { renderTasks, updateElapsed } from '../ui/tasks.js';
+import { initI18n, watchLang, t, s } from '../lib/i18n.js';
 
 // ─── element refs ──────────────────────────────────────────────────────────
 const els = {
-  // tasks tab
   activeList: document.getElementById('active-list'),
   taskList: document.getElementById('task-list'),
   newTaskInput: document.getElementById('new-task-input'),
-  // report tab
   from: document.getElementById('from-date'),
   to: document.getElementById('to-date'),
   rangeSummary: document.getElementById('range-summary'),
@@ -23,7 +17,6 @@ const els = {
   report: document.getElementById('report'),
   grandTotal: document.getElementById('grand-total'),
   exportText: document.getElementById('export-text'),
-  // shared
   error: document.getElementById('error'),
 };
 
@@ -32,11 +25,10 @@ els.to.value = todayInputValue();
 
 let state = null;
 
-// ─── tabs ───────────────────────────────────────────────────────────────────
+// ─── tabs ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach((btn) =>
   btn.addEventListener('click', () => switchTab(btn.dataset.tab)),
 );
-
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach((b) =>
     b.classList.toggle('active', b.dataset.tab === name),
@@ -45,12 +37,12 @@ function switchTab(name) {
   document.getElementById('tab-report').hidden = name !== 'report';
 }
 
-// ─── options ────────────────────────────────────────────────────────────────
+// ─── options ───────────────────────────────────────────────────────────────
 document.getElementById('open-options').addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
 });
 
-// ─── task tab logic ──────────────────────────────────────────────────────────
+// ─── task tab ──────────────────────────────────────────────────────────────
 async function submitNewTask() {
   const title = els.newTaskInput.value.trim();
   if (!title) { els.newTaskInput.focus(); return; }
@@ -64,9 +56,7 @@ async function submitNewTask() {
   }
 }
 document.getElementById('add-task').addEventListener('click', submitNewTask);
-els.newTaskInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') submitNewTask();
-});
+els.newTaskInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitNewTask(); });
 
 async function refreshTasks() {
   try {
@@ -78,7 +68,7 @@ async function refreshTasks() {
   }
 }
 
-// ─── report tab logic ────────────────────────────────────────────────────────
+// ─── report tab ────────────────────────────────────────────────────────────
 els.filterToggle.addEventListener('click', () => {
   const open = els.filterToggle.getAttribute('aria-expanded') === 'true';
   els.filterToggle.setAttribute('aria-expanded', String(!open));
@@ -88,13 +78,16 @@ els.filterToggle.addEventListener('click', () => {
 document.querySelectorAll('[data-preset]').forEach((btn) =>
   btn.addEventListener('click', () => applyPreset(btn.dataset.preset)),
 );
-document.getElementById('apply-range').addEventListener('click', () => {
-  loadRange(new Date(els.from.value), new Date(els.to.value));
-});
+document.getElementById('apply-range').addEventListener('click', () =>
+  loadRange(new Date(els.from.value), new Date(els.to.value)),
+);
 
 document.getElementById('copy-text').addEventListener('click', async () => {
   await navigator.clipboard.writeText(els.exportText.value);
-  flash(document.getElementById('copy-text'), 'کپی شد!');
+  const btn = document.getElementById('copy-text');
+  const orig = btn.textContent;
+  btn.textContent = '✓';
+  setTimeout(() => { btn.textContent = orig; }, 1200);
 });
 document.getElementById('download-text').addEventListener('click', () => {
   const blob = new Blob([els.exportText.value], { type: 'text/plain;charset=utf-8' });
@@ -143,8 +136,9 @@ async function loadRange(from, to) {
       toDate: to.toISOString(),
     });
     renderReport(report);
-    els.rangeSummary.textContent =
-      `${formatJalaliDateTime(from).split(' ')[0]} تا ${formatJalaliDateTime(to).split(' ')[0]}`;
+    const d0 = formatJalaliDateTime(from).split(' ')[0];
+    const d1 = formatJalaliDateTime(to).split(' ')[0];
+    els.rangeSummary.textContent = `${d0} ${t('toLabel')} ${d1}`;
     els.filterToggle.setAttribute('aria-expanded', 'false');
     els.filterBody.hidden = true;
   } catch (err) {
@@ -154,11 +148,11 @@ async function loadRange(from, to) {
 }
 
 function renderReport(report) {
-  els.grandTotal.textContent = `کل: ${formatDuration(report.totalSeconds)}`;
-  els.exportText.value = buildTextExport(report) || '— داده‌ای برای این بازه نیست —';
+  els.grandTotal.textContent = s().totalLabel(formatDuration(report.totalSeconds));
+  els.exportText.value = buildTextExport(report) || t('noRangeData');
 
   if (report.tasks.length === 0) {
-    els.report.innerHTML = '<div class="empty">برای این بازه گزارشی وجود ندارد.</div>';
+    els.report.innerHTML = `<div class="empty">${escapeHtml(t('noReport'))}</div>`;
     return;
   }
   els.report.innerHTML = '';
@@ -167,7 +161,7 @@ function renderReport(report) {
     card.className = 'report-task';
     const range = task.range
       ? `${formatJalaliDateTime(task.range.start)} - ${formatJalaliDateTime(task.range.end)}`
-      : 'بدون بازه کامل';
+      : t('noRange');
     card.innerHTML = `
       <div class="row between">
         <span class="title">${escapeHtml(task.title)}</span>
@@ -177,8 +171,7 @@ function renderReport(report) {
     for (const sub of task.subtasks) {
       const row = document.createElement('div');
       row.className = 'report-sub';
-      row.innerHTML = `
-        <span>${escapeHtml(sub.title)}</span>
+      row.innerHTML = `<span>${escapeHtml(sub.title)}</span>
         <span class="dur mono">${formatDuration(sub.totalSeconds)}</span>`;
       card.appendChild(row);
     }
@@ -186,27 +179,19 @@ function renderReport(report) {
   }
 }
 
-// ─── shared helpers ──────────────────────────────────────────────────────────
+// ─── helpers ───────────────────────────────────────────────────────────────
 function showError(err) {
   els.error.textContent = err || '';
   els.error.hidden = !err;
 }
-
 function toInputValue(date) {
-  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+  return `${date.getFullYear()}-${p2(date.getMonth() + 1)}-${p2(date.getDate())}`;
 }
-function pad2(n) {
-  return String(n).padStart(2, '0');
-}
-function flash(btn, text) {
-  const original = btn.textContent;
-  btn.textContent = text;
-  setTimeout(() => { btn.textContent = original; }, 1200);
-}
+function p2(n) { return String(n).padStart(2, '0'); }
 
-// ─── init ────────────────────────────────────────────────────────────────────
-let tick = null;
-refreshTasks();
-tick = setInterval(() => updateElapsed(els.activeList), 1000);
-window.addEventListener('unload', () => clearInterval(tick));
+// ─── init ──────────────────────────────────────────────────────────────────
+watchLang();
+await initI18n();
+await refreshTasks();
+setInterval(() => updateElapsed(els.activeList), 1000);
 applyPreset('this-week');

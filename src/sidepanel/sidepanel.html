@@ -3,22 +3,22 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>داشبورد ردیاب زمان</title>
+    <title>ردیاب زمان</title>
     <link rel="stylesheet" href="../ui/common.css" />
     <link rel="stylesheet" href="sidepanel.css" />
   </head>
   <body>
     <header class="row between">
-      <h1>ردیاب زمان</h1>
-      <button id="open-options" class="ghost">تنظیمات</button>
+      <h1 data-i18n="appName">ردیاب زمان</h1>
+      <button id="open-options" class="icon ghost" data-i18n-title="settingsBtn" title="تنظیمات">⚙</button>
     </header>
 
     <nav class="tabs" role="tablist">
-      <button class="tab active" data-tab="tasks" role="tab">تسک‌ها</button>
-      <button class="tab" data-tab="report" role="tab">گزارش</button>
+      <button class="tab active" data-tab="tasks" role="tab" data-i18n="tabTasks">تسک‌ها</button>
+      <button class="tab" data-tab="report" role="tab" data-i18n="tabReport">گزارش</button>
     </nav>
 
-    <!-- =================== TAB: تسک‌ها =================== -->
+    <!-- ═══════════════════ TAB: تسک‌ها ═══════════════════ -->
     <div id="tab-tasks">
 
       <section class="card">
@@ -28,19 +28,20 @@
       <section class="card">
         <div id="task-list"></div>
         <div class="add-task-row row">
-          <input type="text" id="new-task-input" class="grow" placeholder="نام تسک جدید…" />
-          <button id="add-task" class="primary">+ تسک</button>
+          <input type="text" id="new-task-input" class="grow"
+                 data-i18n-ph="newTaskPlaceholder" placeholder="نام تسک جدید…" />
+          <button id="add-task" class="primary" data-i18n="addTask">+ تسک</button>
         </div>
       </section>
 
     </div>
 
-    <!-- =================== TAB: گزارش =================== -->
+    <!-- ═══════════════════ TAB: گزارش ═══════════════════ -->
     <div id="tab-report" hidden>
 
       <section class="card filter-card">
         <button class="filter-toggle row between" id="filter-toggle" aria-expanded="false">
-          <span>فیلتر تاریخ</span>
+          <span data-i18n="filterTitle">فیلتر تاریخ</span>
           <span class="row" style="gap:0.4rem">
             <span id="range-summary" class="tag mono"></span>
             <span class="chevron">▼</span>
@@ -48,25 +49,27 @@
         </button>
         <div class="filter-body" id="filter-body" hidden>
           <div class="row presets">
-            <button data-preset="this-week" class="primary">این هفته</button>
-            <button data-preset="last-week" class="ghost">هفته گذشته</button>
-            <button data-preset="last-30" class="ghost">۳۰ روز اخیر</button>
+            <button data-preset="this-week" class="primary" data-i18n="thisWeek">این هفته</button>
+            <button data-preset="last-week" class="ghost" data-i18n="lastWeek">هفته گذشته</button>
+            <button data-preset="last-30" class="ghost" data-i18n="last30">۳۰ روز اخیر</button>
           </div>
           <div class="row custom">
-            <label class="grow">از
+            <label class="grow">
+              <span data-i18n="fromLabel">از</span>
               <input type="date" id="from-date" />
             </label>
-            <label class="grow">تا
+            <label class="grow">
+              <span data-i18n="toLabel">تا</span>
               <input type="date" id="to-date" />
             </label>
-            <button id="apply-range" class="primary">اعمال</button>
+            <button id="apply-range" class="primary" data-i18n="applyFilter">اعمال</button>
           </div>
         </div>
       </section>
 
       <section class="card">
         <div class="row between">
-          <h2>گزارش</h2>
+          <h2 data-i18n="reportTitle">گزارش</h2>
           <span id="grand-total" class="tag mono"></span>
         </div>
         <div id="report"></div>
@@ -74,10 +77,10 @@
 
       <section class="card">
         <div class="row between">
-          <h2>خروجی متنی</h2>
+          <h2 data-i18n="textOutput">خروجی متنی</h2>
           <div class="row">
-            <button id="copy-text" class="ghost">کپی</button>
-            <button id="download-text" class="ghost">دانلود</button>
+            <button id="copy-text" class="icon ghost" data-i18n-title="copyBtn" title="کپی">⎘</button>
+            <button id="download-text" class="icon ghost" data-i18n-title="downloadBtn" title="دانلود">↓</button>
           </div>
         </div>
         <textarea id="export-text" rows="8" readonly></textarea>

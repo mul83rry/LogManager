@@ -1,9 +1,10 @@
 import { send } from '../ui/messaging.js';
 import { renderTasks, updateElapsed } from '../ui/tasks.js';
+import { initI18n, watchLang, s } from '../lib/i18n.js';
 
 const els = {
   weekLabel: document.getElementById('week-label'),
-  activeList: document.getElementById('active-list'),
+  active: document.getElementById('active'),
   taskList: document.getElementById('task-list'),
   newTaskInput: document.getElementById('new-task-input'),
   error: document.getElementById('error'),
@@ -21,6 +22,10 @@ document.getElementById('open-dashboard').addEventListener('click', async () => 
   } catch {
     chrome.tabs.create({ url: chrome.runtime.getURL('src/sidepanel/sidepanel.html') });
   }
+});
+
+document.getElementById('open-options').addEventListener('click', () => {
+  chrome.runtime.openOptionsPage();
 });
 
 async function submitNewTask() {
@@ -49,14 +54,18 @@ async function refresh() {
   try {
     state = await send('getState');
     showError('');
-    els.weekLabel.textContent = `هفته ${state.week.week} / ${state.week.year}`;
-    els.deviceLine.textContent = `دستگاه: ${state.filePrefix}`;
-    renderTasks(els.activeList, els.taskList, state, refresh);
+    const str = s();
+    els.weekLabel.textContent = str.weekLabel(state.week.week, state.week.year);
+    els.deviceLine.textContent = str.deviceLine(state.filePrefix);
+    renderTasks(els.active, els.taskList, state, refresh);
   } catch (err) {
     showError(err.message);
   }
 }
 
-refresh();
-tick = setInterval(() => updateElapsed(els.activeList), 1000);
+// Init
+watchLang();
+await initI18n();
+await refresh();
+tick = setInterval(() => updateElapsed(els.active), 1000);
 window.addEventListener('unload', () => clearInterval(tick));

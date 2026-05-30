@@ -87,4 +87,13 @@ select:focus { outline: 2px solid var(--primary); }
 }
 .tag.live { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
 .error { color: #fca5a5; font-size: 0.85rem; }
-.empty { color: var(--muted); text-align: center; padding: 1.5rem 0; }
+/* icon-only square button */
+button.icon {
+  padding: 0.35rem 0.5rem;
+  min-width: 2rem;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: 8px;
+}
+button.icon.success { background: var(--success); color: #fff; }
+button.icon.danger  { background: var(--danger);  color: #fff; }

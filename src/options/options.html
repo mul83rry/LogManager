@@ -3,56 +3,74 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>تنظیمات ردیاب زمان</title>
+    <title>تنظیمات</title>
     <link rel="stylesheet" href="../ui/common.css" />
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
     <main>
-      <h1>تنظیمات ردیاب زمان</h1>
+      <h1 data-i18n="settingsTitle">تنظیمات</h1>
 
+      <!-- زبان -->
       <section class="card">
-        <h2>دستگاه</h2>
-        <p class="muted">شناسه این دستگاه در نام فایل‌های کلاد استفاده می‌شود.</p>
+        <h2 data-i18n="langSection">زبان</h2>
+        <label class="field">
+          <span data-i18n="langLabel">زبان رابط کاربری</span>
+          <select id="lang-select">
+            <option value="fa" data-i18n="langFa">فارسی</option>
+            <option value="en" data-i18n="langEn">English</option>
+          </select>
+        </label>
+      </section>
+
+      <!-- دستگاه -->
+      <section class="card">
+        <h2 data-i18n="deviceSection">دستگاه</h2>
         <div class="row">
-          <span class="muted">شناسه:</span>
+          <span class="muted" data-i18n="deviceIdLabel">شناسه</span>
           <span id="device-id" class="mono"></span>
         </div>
         <label class="field">
-          نام دلخواه دستگاه (مثلاً Laptop-Ali)
+          <span data-i18n="deviceLabelLabel">نام دلخواه دستگاه</span>
           <div class="row">
-            <input type="text" id="device-label" class="grow" placeholder="Laptop-Ali" />
-            <button id="save-label" class="primary">ذخیره</button>
+            <input type="text" id="device-label" class="grow"
+                   data-i18n-ph="deviceLabelPlaceholder" placeholder="Laptop-Ali" />
+            <button id="save-label" class="primary" data-i18n="saveLabelBtn">ذخیره</button>
           </div>
         </label>
-        <p class="muted">نام فایل هفته جاری: <span id="file-preview" class="mono"></span></p>
+        <p class="muted">
+          <span data-i18n="filePreviewLabel">نام فایل هفته جاری</span>:
+          <span id="file-preview" class="mono"></span>
+        </p>
       </section>
 
+      <!-- کلاد -->
       <section class="card">
-        <h2>اتصال به کلاد</h2>
+        <h2 data-i18n="cloudSection">اتصال به کلاد</h2>
         <label class="field">
-          محل ذخیره‌سازی
+          <span data-i18n="providerLabel">محل ذخیره‌سازی</span>
           <select id="provider">
-            <option value="local">محلی (بدون نیاز به تنظیم)</option>
-            <option value="onedrive">OneDrive</option>
+            <option value="local" data-i18n="providerLocal">محلی (بدون نیاز به تنظیم)</option>
+            <option value="onedrive" data-i18n="providerOneDrive">OneDrive</option>
           </select>
         </label>
 
         <div id="onedrive-config" hidden>
           <label class="field">
-            شناسه کلاینت (Client ID) برنامه Azure
-            <input type="text" id="client-id" class="grow" placeholder="00000000-0000-0000-0000-000000000000" />
+            <span data-i18n="clientIdLabel">شناسه کلاینت (Client ID)</span>
+            <input type="text" id="client-id" class="grow"
+                   placeholder="00000000-0000-0000-0000-000000000000" />
           </label>
           <p class="muted">
-            این آدرس را به‌عنوان Redirect URI در Azure ثبت کنید:
+            <span data-i18n="redirectUriLabel">Redirect URI</span>
             <code id="redirect-uri" class="mono"></code>
           </p>
         </div>
 
         <div class="row">
-          <button id="save-provider" class="primary">ذخیره تنظیمات</button>
-          <button id="connect" class="success" hidden>اتصال به OneDrive</button>
-          <button id="disconnect" class="danger" hidden>قطع اتصال</button>
+          <button id="save-provider" class="primary" data-i18n="saveProviderBtn">ذخیره تنظیمات</button>
+          <button id="connect" class="success" hidden data-i18n="connectBtn">اتصال به OneDrive</button>
+          <button id="disconnect" class="danger" hidden data-i18n="disconnectBtn">قطع اتصال</button>
           <span id="cloud-status" class="tag"></span>
         </div>
       </section>

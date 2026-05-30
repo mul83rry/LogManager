@@ -9,24 +9,22 @@
   </head>
   <body>
     <header class="row between">
-      <h1>ردیاب زمان</h1>
+      <h1 data-i18n="appName">ردیاب زمان</h1>
       <div class="row">
         <span id="week-label" class="tag mono"></span>
-        <button id="open-dashboard" class="ghost" title="داشبورد">داشبورد</button>
+        <button id="open-dashboard" class="icon ghost" data-i18n-title="openDashboard" title="باز کردن داشبورد">⊞</button>
+        <button id="open-options" class="icon ghost" data-i18n-title="settingsBtn" title="تنظیمات">⚙</button>
       </div>
     </header>
 
-    <section id="active" class="card">
-      <h2>تایمرهای فعال</h2>
-      <div id="active-list"></div>
-    </section>
+    <section id="active" class="card"></section>
 
     <section class="card">
-      <h2>تسک‌های این هفته</h2>
       <div id="task-list"></div>
       <div class="add-task-row row">
-        <input type="text" id="new-task-input" class="grow" placeholder="نام تسک جدید…" />
-        <button id="add-task" class="primary">+ تسک</button>
+        <input type="text" id="new-task-input" class="grow"
+               data-i18n-ph="newTaskPlaceholder" placeholder="نام تسک جدید…" />
+        <button id="add-task" class="primary" data-i18n="addTask">+ تسک</button>
       </div>
     </section>
 
