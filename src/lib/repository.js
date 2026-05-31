@@ -137,6 +137,66 @@ export async function deleteSubtask(taskId, subtaskId) {
   }
 }
 
+/** Update a single log entry's timestamp (and recalculate adjacent duration). */
+export async function updateLog(taskId, subtaskId, logIndex, newTimestamp) {
+  const { week, year } = weekOf();
+  const file = await loadOwnWeekFile(week, year);
+  const task = file.tasks.find((t) => t.id === taskId);
+  const sub = task?.subtasks.find((s) => s.id === subtaskId);
+  if (!sub?.logs[logIndex]) throw new Error('Log not found');
+
+  sub.logs[logIndex].timestamp = newTimestamp;
+
+  // Keep duration_seconds consistent with adjacent sibling.
+  if (sub.logs[logIndex].type === 'system_stop') {
+    for (let i = logIndex - 1; i >= 0; i--) {
+      if (sub.logs[i].type === 'system_start') {
+        sub.logs[logIndex].duration_seconds = Math.max(
+          0,
+          Math.round((new Date(newTimestamp) - new Date(sub.logs[i].timestamp)) / 1000),
+        );
+        break;
+      }
+    }
+  } else if (sub.logs[logIndex].type === 'system_start') {
+    for (let i = logIndex + 1; i < sub.logs.length; i++) {
+      if (sub.logs[i].type === 'system_stop') {
+        sub.logs[i].duration_seconds = Math.max(
+          0,
+          Math.round((new Date(sub.logs[i].timestamp) - new Date(newTimestamp)) / 1000),
+        );
+        break;
+      }
+    }
+  }
+  await writeFile(file);
+}
+
+/** Delete a log entry by index. */
+export async function deleteLog(taskId, subtaskId, logIndex) {
+  const { week, year } = weekOf();
+  const file = await loadOwnWeekFile(week, year);
+  const task = file.tasks.find((t) => t.id === taskId);
+  const sub = task?.subtasks.find((s) => s.id === subtaskId);
+  if (!sub) throw new Error('Subtask not found');
+  sub.logs.splice(logIndex, 1);
+  await writeFile(file);
+}
+
+/** Insert a manually-entered start/stop pair, sorted into the log by timestamp. */
+export async function addManualInterval(taskId, subtaskId, startTs, endTs) {
+  const { week, year } = weekOf(new Date(startTs));
+  const file = await loadOwnWeekFile(week, year);
+  const task = file.tasks.find((t) => t.id === taskId);
+  const sub = task?.subtasks.find((s) => s.id === subtaskId);
+  if (!sub) throw new Error('Subtask not found');
+  const dur = Math.max(0, Math.round((new Date(endTs) - new Date(startTs)) / 1000));
+  sub.logs.push(createLog('system_start', startTs, 0));
+  sub.logs.push(createLog('system_stop', endTs, dur));
+  sub.logs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  await writeFile(file);
+}
+
 export async function setSubtaskDescription(taskId, subtaskId, description) {
   const { week, year } = weekOf();
   const file = await loadOwnWeekFile(week, year);

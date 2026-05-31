@@ -12,6 +12,9 @@ import {
   deleteTask,
   deleteSubtask,
   setSubtaskDescription,
+  updateLog,
+  deleteLog,
+  addManualInterval,
   appendLog,
   getReportForDateRange,
   getReportForWeeks,
@@ -164,6 +167,12 @@ const handlers = {
   deleteSubtask: ({ taskId, subtaskId }) => deleteSubtask(taskId, subtaskId),
   setSubtaskDescription: ({ taskId, subtaskId, description }) =>
     setSubtaskDescription(taskId, subtaskId, description),
+  updateLog: ({ taskId, subtaskId, logIndex, timestamp }) =>
+    updateLog(taskId, subtaskId, logIndex, timestamp),
+  deleteLog: ({ taskId, subtaskId, logIndex }) =>
+    deleteLog(taskId, subtaskId, logIndex),
+  addManualInterval: ({ taskId, subtaskId, startTs, endTs }) =>
+    addManualInterval(taskId, subtaskId, startTs, endTs),
 
   startTimer: ({ taskId, subtaskId }) => startTimer(taskId, subtaskId),
   stopTimer: ({ subtaskId }) => stopTimer(subtaskId),

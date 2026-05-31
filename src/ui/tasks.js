@@ -55,10 +55,9 @@ function renderTaskList(container, state, onRefresh) {
     const card = document.createElement('div');
     card.className = 'task';
 
-    // ── task header ──────────────────────────────────────────────────────
+    // task header
     const head = document.createElement('div');
     head.className = 'row between task-head';
-
     const titleSpan = makeEditableTitle(task.title, 'task-title', async (val) => {
       await send('renameTask', { taskId: task.id, title: val });
       onRefresh();
@@ -67,7 +66,6 @@ function renderTaskList(container, state, onRefresh) {
 
     const actions = document.createElement('div');
     actions.className = 'row task-actions';
-
     const addSubBtn = iconBtn('+', '', t('addSubtaskTitle'));
     addSubBtn.addEventListener('click', () =>
       promptInline(card, t('newSubtaskPlaceholder'), async (title) => {
@@ -75,25 +73,25 @@ function renderTaskList(container, state, onRefresh) {
         onRefresh();
       }),
     );
-
     const delBtn = iconBtn('✕', 'ghost-danger', t('deleteTask'));
-    delBtn.addEventListener('click', () => confirmDelete(card, async () => {
-      await send('deleteTask', { taskId: task.id });
-      onRefresh();
-    }));
-
+    delBtn.addEventListener('click', () =>
+      confirmDelete(card, async () => {
+        await send('deleteTask', { taskId: task.id });
+        onRefresh();
+      }),
+    );
     actions.append(addSubBtn, delBtn);
     head.appendChild(actions);
     card.appendChild(head);
 
-    // ── subtasks ─────────────────────────────────────────────────────────
     for (const sub of task.subtasks) {
       card.appendChild(buildSubtaskRow(task.id, sub, running.has(sub.id), onRefresh));
     }
-
     container.appendChild(card);
   }
 }
+
+// ── subtask row ────────────────────────────────────────────────────────────
 
 function buildSubtaskRow(taskId, sub, isRunning, onRefresh) {
   const wrap = document.createElement('div');
@@ -103,46 +101,48 @@ function buildSubtaskRow(taskId, sub, isRunning, onRefresh) {
   const row = document.createElement('div');
   row.className = 'subtask';
 
-  const subTitle = makeEditableTitle(sub.title, 'name', async (val) => {
+  const subTitle = makeEditableTitle(sub.title, 'name grow', async (val) => {
     await send('renameSubtask', { taskId, subtaskId: sub.id, title: val });
     onRefresh();
   });
-  subTitle.classList.add('grow');
   row.appendChild(subTitle);
 
-  // description toggle
+  // description toggle (≡)
   const descBtn = iconBtn('≡', 'ghost', t('addDescription'));
-  descBtn.style.fontSize = '0.9rem';
-  descBtn.addEventListener('click', () => {
-    const area = wrap.querySelector('.sub-desc-area');
-    area.hidden = !area.hidden;
-    if (!area.hidden) area.querySelector('textarea, .sub-desc-text')?.focus?.();
-  });
+  descBtn.addEventListener('click', () => togglePanel(wrap, '.sub-desc-area'));
 
-  // timer button
-  const timerBtn = iconBtn(isRunning ? '■' : '▶', isRunning ? 'danger' : 'success',
-    isRunning ? t('stopTimerTitle') : t('startTimerTitle'));
+  // log/time panel toggle (⏱)
+  const logBtn = iconBtn('⏱', 'ghost', t('logsBtn'));
+  logBtn.addEventListener('click', () => togglePanel(wrap, '.log-panel'));
+
+  // timer button (▶ / ■)
+  const timerBtn = iconBtn(
+    isRunning ? '■' : '▶',
+    isRunning ? 'danger' : 'success',
+    isRunning ? t('stopTimerTitle') : t('startTimerTitle'),
+  );
   timerBtn.addEventListener('click', async () => {
     if (isRunning) await send('stopTimer', { subtaskId: sub.id });
     else await send('startTimer', { taskId, subtaskId: sub.id });
     onRefresh();
   });
 
-  // delete subtask
+  // delete subtask (✕)
   const delBtn = iconBtn('✕', 'ghost-danger', t('deleteSubtask'));
-  delBtn.addEventListener('click', () => confirmDelete(wrap, async () => {
-    await send('deleteSubtask', { taskId, subtaskId: sub.id });
-    onRefresh();
-  }));
+  delBtn.addEventListener('click', () =>
+    confirmDelete(wrap, async () => {
+      await send('deleteSubtask', { taskId, subtaskId: sub.id });
+      onRefresh();
+    }),
+  );
 
-  row.append(descBtn, timerBtn, delBtn);
+  row.append(descBtn, logBtn, timerBtn, delBtn);
   wrap.appendChild(row);
 
-  // ── description area (hidden by default) ──────────────────────────────
+  // description panel
   const descArea = document.createElement('div');
   descArea.className = 'sub-desc-area';
-  descArea.hidden = !sub.description; // show if already has content
-
+  descArea.hidden = !sub.description;
   if (sub.description) {
     descArea.appendChild(makeDescriptionEditor(taskId, sub, onRefresh));
   } else {
@@ -157,7 +157,234 @@ function buildSubtaskRow(taskId, sub, isRunning, onRefresh) {
   }
   wrap.appendChild(descArea);
 
+  // log panel (hidden by default)
+  const logPanel = buildLogPanel(taskId, sub, onRefresh);
+  logPanel.hidden = true;
+  wrap.appendChild(logPanel);
+
   return wrap;
+}
+
+// ── log / interval panel ───────────────────────────────────────────────────
+
+function buildLogPanel(taskId, sub, onRefresh) {
+  const panel = document.createElement('div');
+  panel.className = 'log-panel';
+
+  const pairs = pairLogsWithIndices(sub.logs);
+
+  if (pairs.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'muted log-empty';
+    empty.textContent = t('noLogs');
+    panel.appendChild(empty);
+  }
+
+  for (const { startIdx, stopIdx } of pairs) {
+    panel.appendChild(buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh));
+  }
+
+  // add manual interval button
+  const addBtn = document.createElement('button');
+  addBtn.className = 'ghost log-add-btn';
+  addBtn.textContent = t('addInterval');
+  addBtn.addEventListener('click', () => {
+    addBtn.hidden = true;
+    buildAddIntervalForm(panel, taskId, sub, onRefresh, addBtn);
+  });
+  panel.appendChild(addBtn);
+
+  return panel;
+}
+
+function buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh) {
+  const wrap = document.createElement('div');
+  wrap.className = 'log-interval';
+
+  const startLog = startIdx != null ? sub.logs[startIdx] : null;
+  const stopLog = stopIdx != null ? sub.logs[stopIdx] : null;
+
+  // duration display (recalculated live)
+  const durSpan = document.createElement('span');
+  durSpan.className = 'log-dur muted mono';
+
+  function refreshDur(startTs, endTs) {
+    if (startTs && endTs) {
+      const secs = Math.max(0, (new Date(endTs) - new Date(startTs)) / 1000);
+      durSpan.textContent = formatDuration(secs);
+    } else {
+      durSpan.textContent = '';
+    }
+  }
+  refreshDur(startLog?.timestamp, stopLog?.timestamp);
+
+  // start row
+  const startRow = document.createElement('div');
+  startRow.className = 'log-row';
+  const startLabel = document.createElement('span');
+  startLabel.className = 'log-label muted';
+  startLabel.textContent = t('logStart');
+  startRow.appendChild(startLabel);
+
+  if (startLog) {
+    const startInput = makeDTInput(startLog.timestamp);
+    let debounce = null;
+    startInput.addEventListener('change', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(async () => {
+        const newTs = fromDatetimeLocal(startInput.value);
+        refreshDur(newTs, stopLog?.timestamp);
+        await send('updateLog', { taskId, subtaskId: sub.id, logIndex: startIdx, timestamp: newTs });
+      }, 400);
+    });
+    startRow.appendChild(startInput);
+  } else {
+    const ph = document.createElement('span');
+    ph.className = 'muted';
+    ph.style.fontSize = '0.78rem';
+    ph.textContent = '—';
+    startRow.appendChild(ph);
+  }
+  wrap.appendChild(startRow);
+
+  // end row
+  const endRow = document.createElement('div');
+  endRow.className = 'log-row';
+  const endLabel = document.createElement('span');
+  endLabel.className = 'log-label muted';
+  endLabel.textContent = t('logEnd');
+  endRow.appendChild(endLabel);
+
+  if (stopLog) {
+    const endInput = makeDTInput(stopLog.timestamp);
+    let debounce = null;
+    endInput.addEventListener('change', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(async () => {
+        const newTs = fromDatetimeLocal(endInput.value);
+        refreshDur(startLog?.timestamp, newTs);
+        await send('updateLog', { taskId, subtaskId: sub.id, logIndex: stopIdx, timestamp: newTs });
+      }, 400);
+    });
+    endRow.appendChild(endInput);
+  } else {
+    const running = document.createElement('span');
+    running.className = 'tag live';
+    running.style.fontSize = '0.75rem';
+    running.textContent = t('logRunning');
+    endRow.appendChild(running);
+  }
+
+  // footer: duration + delete
+  const footer = document.createElement('div');
+  footer.className = 'log-footer row';
+  footer.appendChild(durSpan);
+
+  const delIntervalBtn = iconBtn('✕', 'ghost-danger', t('deleteInterval'));
+  delIntervalBtn.addEventListener('click', async () => {
+    // Delete stop log first (higher index), then start log.
+    const indices = [stopIdx, startIdx].filter((i) => i != null).sort((a, b) => b - a);
+    for (const idx of indices) {
+      await send('deleteLog', { taskId, subtaskId: sub.id, logIndex: idx });
+    }
+    wrap.remove();
+  });
+  footer.appendChild(delIntervalBtn);
+  endRow.appendChild(footer);
+
+  wrap.appendChild(endRow);
+  return wrap;
+}
+
+function buildAddIntervalForm(panel, taskId, sub, onRefresh, addBtn) {
+  const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 3600 * 1000);
+
+  const form = document.createElement('div');
+  form.className = 'log-interval log-add-form';
+
+  const startRow = document.createElement('div');
+  startRow.className = 'log-row';
+  startRow.innerHTML = `<span class="log-label muted">${esc(t('logStart'))}</span>`;
+  const startInput = makeDTInput(oneHourAgo.toISOString());
+  startRow.appendChild(startInput);
+
+  const endRow = document.createElement('div');
+  endRow.className = 'log-row';
+  endRow.innerHTML = `<span class="log-label muted">${esc(t('logEnd'))}</span>`;
+  const endInput = makeDTInput(now.toISOString());
+  const actions = document.createElement('div');
+  actions.className = 'log-footer row';
+  const saveBtn = iconBtn('✓', 'primary', t('saveTitle'));
+  const cancelBtn = iconBtn('✕', 'ghost', t('cancelTitle'));
+  saveBtn.addEventListener('click', async () => {
+    const startTs = fromDatetimeLocal(startInput.value);
+    const endTs = fromDatetimeLocal(endInput.value);
+    if (new Date(endTs) <= new Date(startTs)) return;
+    await send('addManualInterval', { taskId, subtaskId: sub.id, startTs, endTs });
+    form.remove();
+    onRefresh();
+  });
+  cancelBtn.addEventListener('click', () => {
+    form.remove();
+    addBtn.hidden = false;
+  });
+  actions.append(saveBtn, cancelBtn);
+  endRow.appendChild(endInput);
+  endRow.appendChild(actions);
+
+  form.append(startRow, endRow);
+  panel.insertBefore(form, addBtn);
+  startInput.focus();
+}
+
+// ── helpers ────────────────────────────────────────────────────────────────
+
+/** Pair log entries into { startIdx, stopIdx } objects (indices into logs[]). */
+function pairLogsWithIndices(logs) {
+  const pairs = [];
+  let openIdx = null;
+  for (let i = 0; i < logs.length; i++) {
+    if (logs[i].type === 'system_start') {
+      if (openIdx !== null) pairs.push({ startIdx: openIdx, stopIdx: null });
+      openIdx = i;
+    } else if (logs[i].type === 'system_stop') {
+      pairs.push({ startIdx: openIdx, stopIdx: i });
+      openIdx = null;
+    }
+  }
+  if (openIdx !== null) pairs.push({ startIdx: openIdx, stopIdx: null });
+  return pairs;
+}
+
+/** ISO timestamp → `<input type="datetime-local">` value (local time). */
+function toDatetimeLocal(isoStr) {
+  const d = new Date(isoStr);
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${y}-${mo}-${day}T${h}:${mi}`;
+}
+
+/** `<input type="datetime-local">` value → ISO UTC timestamp string. */
+function fromDatetimeLocal(localStr) {
+  return new Date(localStr).toISOString();
+}
+
+function makeDTInput(isoStr) {
+  const input = document.createElement('input');
+  input.type = 'datetime-local';
+  input.className = 'log-dt-input grow';
+  input.step = '60';
+  input.value = toDatetimeLocal(isoStr);
+  return input;
+}
+
+function togglePanel(wrap, selector) {
+  const panel = wrap.querySelector(selector);
+  if (panel) panel.hidden = !panel.hidden;
 }
 
 function makeDescriptionEditor(taskId, sub, onRefresh) {
@@ -173,13 +400,9 @@ function makeDescriptionEditor(taskId, sub, onRefresh) {
       await send('setSubtaskDescription', { taskId, subtaskId: sub.id, description: ta.value });
     }, 700);
   });
-  ta.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') ta.blur();
-  });
+  ta.addEventListener('keydown', (e) => { if (e.key === 'Escape') ta.blur(); });
   return ta;
 }
-
-// ── helpers ────────────────────────────────────────────────────────────────
 
 function iconBtn(symbol, variant, tooltip = '') {
   const btn = document.createElement('button');
@@ -195,7 +418,6 @@ function makeEditableTitle(title, className, onSave) {
   span.textContent = title;
   span.title = t('editTitleHint');
   span.style.cursor = 'text';
-
   span.addEventListener('click', () => {
     const input = document.createElement('input');
     input.value = span.textContent;
@@ -222,10 +444,6 @@ function makeEditableTitle(title, className, onSave) {
   return span;
 }
 
-/**
- * Replace `container`'s content with a "حذف شود؟ [بله] [خیر]" strip.
- * Reverts automatically after 4 s if no action taken.
- */
 function confirmDelete(container, onConfirm) {
   const prev = container.innerHTML;
   const strip = document.createElement('div');
@@ -257,12 +475,11 @@ export function promptInline(container, placeholder, onSubmit) {
     if (value) await onSubmit(value);
     wrap.remove();
   };
-  const dismiss = () => wrap.remove();
   ok.addEventListener('click', submit);
-  cancel.addEventListener('click', dismiss);
+  cancel.addEventListener('click', () => wrap.remove());
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submit();
-    if (e.key === 'Escape') dismiss();
+    if (e.key === 'Escape') wrap.remove();
   });
   wrap.append(input, ok, cancel);
   container.appendChild(wrap);

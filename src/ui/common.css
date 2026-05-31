@@ -150,3 +150,54 @@ button.icon.ghost-danger:hover { color: var(--danger); opacity: 1; }
 
 /* inline prompt */
 .inline-prompt { margin-top: 0.4rem; gap: 0.3rem; }
+
+/* log / interval panel */
+.log-panel {
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  margin-top: 0.3rem;
+}
+.log-interval {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.log-interval:last-of-type { border-bottom: none; }
+.log-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+  flex-wrap: wrap;
+}
+.log-label {
+  font-size: 0.75rem;
+  min-width: 2.5rem;
+  flex-shrink: 0;
+}
+.log-dt-input {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.3rem;
+  min-width: 0;
+}
+.log-dur {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.log-footer {
+  justify-content: space-between;
+  margin-top: 0.1rem;
+  flex-wrap: nowrap;
+}
+.log-add-btn {
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+  width: 100%;
+}
+.log-empty {
+  font-size: 0.82rem;
+  text-align: center;
+  padding: 0.3rem 0;
+  margin: 0;
+}
+.log-add-form { background: rgba(59, 130, 246, 0.05); border-radius: 6px; padding: 0.25rem; }
