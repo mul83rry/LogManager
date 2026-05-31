@@ -43,6 +43,7 @@ async function submitNewTask() {
 document.getElementById('add-task').addEventListener('click', submitNewTask);
 els.newTaskInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') submitNewTask();
+  if (e.key === 'Escape') { els.newTaskInput.value = ''; els.newTaskInput.blur(); }
 });
 
 function showError(message) {

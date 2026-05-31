@@ -37,10 +37,11 @@ export function mergeWeekFiles(files) {
       for (const subtask of task.subtasks || []) {
         let mSub = mTask.subtasks.get(subtask.id);
         if (!mSub) {
-          mSub = { id: subtask.id, title: subtask.title, logs: [] };
+          mSub = { id: subtask.id, title: subtask.title, description: subtask.description || '', logs: [] };
           mTask.subtasks.set(subtask.id, mSub);
-        } else if (subtask.title != null) {
-          mSub.title = subtask.title;
+        } else {
+          if (subtask.title != null) mSub.title = subtask.title;
+          if (subtask.description != null) mSub.description = subtask.description;
         }
         for (const log of subtask.logs || []) {
           mSub.logs.push({ ...log });

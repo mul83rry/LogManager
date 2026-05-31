@@ -56,7 +56,10 @@ async function submitNewTask() {
   }
 }
 document.getElementById('add-task').addEventListener('click', submitNewTask);
-els.newTaskInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitNewTask(); });
+els.newTaskInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitNewTask();
+  if (e.key === 'Escape') { els.newTaskInput.value = ''; els.newTaskInput.blur(); }
+});
 
 async function refreshTasks() {
   try {
@@ -156,25 +159,68 @@ function renderReport(report) {
     return;
   }
   els.report.innerHTML = '';
+
+  // Width of the longest task bar = 100%; others are proportional.
+  const maxSec = Math.max(...report.tasks.map((tk) => tk.totalSeconds), 1);
+
   for (const task of report.tasks) {
     const card = document.createElement('div');
     card.className = 'report-task';
-    const range = task.range
-      ? `${formatJalaliDateTime(task.range.start)} - ${formatJalaliDateTime(task.range.end)}`
-      : t('noRange');
-    card.innerHTML = `
-      <div class="row between">
-        <span class="title">${escapeHtml(task.title)}</span>
-        <span class="mono tag">${formatDuration(task.totalSeconds)}</span>
-      </div>
-      <div class="muted mono">${range}</div>`;
-    for (const sub of task.subtasks) {
-      const row = document.createElement('div');
-      row.className = 'report-sub';
-      row.innerHTML = `<span>${escapeHtml(sub.title)}</span>
-        <span class="dur mono">${formatDuration(sub.totalSeconds)}</span>`;
-      card.appendChild(row);
+
+    // header: title + total duration
+    const head = document.createElement('div');
+    head.className = 'report-task-head';
+    head.innerHTML = `<span class="rtitle">${escapeHtml(task.title)}</span>
+      <span class="rdur mono">${formatDuration(task.totalSeconds)}</span>`;
+    card.appendChild(head);
+
+    // task bar (proportional to max task)
+    const taskPct = task.totalSeconds ? (task.totalSeconds / maxSec) * 100 : 0;
+    card.insertAdjacentHTML('beforeend',
+      `<div class="dur-bar"><div class="dur-bar-fill" style="width:${taskPct.toFixed(1)}%"></div></div>`);
+
+    // date range
+    if (task.range) {
+      const rangeEl = document.createElement('div');
+      rangeEl.className = 'report-range';
+      rangeEl.textContent =
+        `${formatJalaliDateTime(task.range.start)} ← ${formatJalaliDateTime(task.range.end)}`;
+      card.appendChild(rangeEl);
     }
+
+    // subtasks
+    if (task.subtasks.length > 0) {
+      const subsWrap = document.createElement('div');
+      subsWrap.className = 'report-subs';
+      for (const sub of task.subtasks) {
+        const item = document.createElement('div');
+        item.className = 'report-sub-item';
+
+        const row = document.createElement('div');
+        row.className = 'report-sub-row';
+        row.innerHTML = `<span class="report-sub-name">${escapeHtml(sub.title)}</span>
+          <span class="report-sub-dur mono">${formatDuration(sub.totalSeconds)}</span>`;
+        item.appendChild(row);
+
+        // sub bar (proportional to task total)
+        const subPct = task.totalSeconds
+          ? (sub.totalSeconds / task.totalSeconds) * 100 : 0;
+        item.insertAdjacentHTML('beforeend',
+          `<div class="dur-bar" style="height:3px">
+             <div class="dur-bar-fill sub" style="width:${subPct.toFixed(1)}%"></div>
+           </div>`);
+
+        if (sub.description) {
+          const desc = document.createElement('div');
+          desc.className = 'report-sub-desc';
+          desc.textContent = sub.description;
+          item.appendChild(desc);
+        }
+        subsWrap.appendChild(item);
+      }
+      card.appendChild(subsWrap);
+    }
+
     els.report.appendChild(card);
   }
 }

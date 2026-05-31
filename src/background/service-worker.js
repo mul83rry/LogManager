@@ -9,6 +9,9 @@ import {
   addSubtask,
   renameTask,
   renameSubtask,
+  deleteTask,
+  deleteSubtask,
+  setSubtaskDescription,
   appendLog,
   getReportForDateRange,
   getReportForWeeks,
@@ -157,6 +160,10 @@ const handlers = {
   addSubtask: ({ taskId, title }) => addSubtask(taskId, title),
   renameTask: ({ taskId, title }) => renameTask(taskId, title),
   renameSubtask: ({ taskId, subtaskId, title }) => renameSubtask(taskId, subtaskId, title),
+  deleteTask: ({ taskId }) => deleteTask(taskId),
+  deleteSubtask: ({ taskId, subtaskId }) => deleteSubtask(taskId, subtaskId),
+  setSubtaskDescription: ({ taskId, subtaskId, description }) =>
+    setSubtaskDescription(taskId, subtaskId, description),
 
   startTimer: ({ taskId, subtaskId }) => startTimer(taskId, subtaskId),
   stopTimer: ({ subtaskId }) => stopTimer(subtaskId),

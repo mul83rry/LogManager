@@ -120,6 +120,34 @@ export async function renameSubtask(taskId, subtaskId, title) {
   await writeFile(file);
 }
 
+export async function deleteTask(taskId) {
+  const { week, year } = weekOf();
+  const file = await loadOwnWeekFile(week, year);
+  file.tasks = file.tasks.filter((t) => t.id !== taskId);
+  await writeFile(file);
+}
+
+export async function deleteSubtask(taskId, subtaskId) {
+  const { week, year } = weekOf();
+  const file = await loadOwnWeekFile(week, year);
+  const task = file.tasks.find((t) => t.id === taskId);
+  if (task) {
+    task.subtasks = task.subtasks.filter((s) => s.id !== subtaskId);
+    await writeFile(file);
+  }
+}
+
+export async function setSubtaskDescription(taskId, subtaskId, description) {
+  const { week, year } = weekOf();
+  const file = await loadOwnWeekFile(week, year);
+  const task = file.tasks.find((t) => t.id === taskId);
+  const sub = task?.subtasks.find((s) => s.id === subtaskId);
+  if (sub) {
+    sub.description = description;
+    await writeFile(file);
+  }
+}
+
 /**
  * Append a log to this device's file for the week that the log's timestamp
  * falls in. Because the target week is derived from the timestamp, a stop that

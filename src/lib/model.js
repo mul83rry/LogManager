@@ -42,8 +42,8 @@ export function createTask(title, id = shortId()) {
   return { id, title, subtasks: [] };
 }
 
-export function createSubtask(title, id = shortId()) {
-  return { id, title, logs: [] };
+export function createSubtask(title, id = shortId(), description = '') {
+  return { id, title, description, logs: [] };
 }
 
 export function createLog(type, timestamp = new Date().toISOString(), durationSeconds = 0) {

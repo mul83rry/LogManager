@@ -43,6 +43,8 @@ body {
   margin-bottom: 0.4rem;
 }
 .timer .elapsed { font-size: 1.05rem; }
+.timer-sub { font-size: .9rem; font-weight: 600; }
+.timer-task { font-size: .78rem; }
 
 .task {
   border: 1px solid var(--border);
@@ -101,22 +103,83 @@ body {
   color: var(--muted);
 }
 
+/* ── visual report cards ───────────────────────────────────────────────── */
 .report-task {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.55rem;
-  margin-bottom: 0.5rem;
+  padding: 0.65rem 0.7rem 0.5rem;
+  margin-bottom: 0.6rem;
+  background: var(--surface);
 }
-.report-task > .row { margin-bottom: 0.3rem; }
-.report-task .title { font-weight: 600; }
-.report-sub {
+
+/* task header */
+.report-task-head {
   display: flex;
   justify-content: space-between;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.88rem;
-  color: var(--muted);
+  align-items: baseline;
+  margin-bottom: 0.3rem;
 }
-.report-sub .dur { color: var(--text); }
+.report-task-head .rtitle {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.report-task-head .rdur {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  margin-inline-start: 0.5rem;
+}
+
+/* duration bar */
+.dur-bar {
+  height: 5px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  margin: 0.2rem 0 0.4rem;
+  overflow: hidden;
+}
+.dur-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--primary);
+  transition: width 0.4s ease;
+}
+.dur-bar-fill.sub { background: rgba(59, 130, 246, 0.45); }
+
+/* date range */
+.report-range {
+  font-size: 0.76rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+/* subtask list */
+.report-subs { border-top: 1px solid var(--border); padding-top: 0.35rem; }
+.report-sub-item {
+  padding: 0.3rem 0;
+}
+.report-sub-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+.report-sub-name { font-size: 0.88rem; }
+.report-sub-dur {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.report-sub-desc {
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-style: italic;
+  padding: 0.1rem 0 0.2rem;
+  white-space: pre-wrap;
+}
 
 textarea {
   width: 100%;
