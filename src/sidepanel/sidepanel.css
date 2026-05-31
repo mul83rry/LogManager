@@ -187,3 +187,83 @@ textarea {
   font-family: 'Consolas', monospace;
   line-height: 1.6;
 }
+
+/* ── summary / charts ──────────────────────────────────────────────────── */
+.summary-card { padding: 0.65rem 0.7rem; }
+
+.summary-stats {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+.stat-chip {
+  flex: 1;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.6rem;
+}
+.stat-lbl {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 0.1rem;
+}
+.stat-val {
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chart-bars-wrap {
+  margin-bottom: 0.7rem;
+  padding: 0 0.2rem;
+}
+
+.summary-bottom {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.donut-wrap { flex-shrink: 0; }
+
+.proj-list-chart {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.proj-chart-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: 0.35rem;
+}
+.proj-chart-name {
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proj-chart-time {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.proj-chart-bar-wrap {
+  width: 50px;
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.proj-chart-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.proj-chart-pct {
+  font-size: 0.75rem;
+  min-width: 2.4rem;
+  text-align: end;
+}

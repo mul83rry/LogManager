@@ -1,6 +1,12 @@
 import { send } from '../ui/messaging.js';
 import { initI18n, watchLang, getLang, setLang, t } from '../lib/i18n.js';
 
+function esc(str) {
+  return String(str).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]),
+  );
+}
+
 const els = {
   langSelect: document.getElementById('lang-select'),
   deviceId: document.getElementById('device-id'),
@@ -102,8 +108,45 @@ els.disconnect.addEventListener('click', async () => {
   } catch (err) { showError(err.message); }
 });
 
+// ── projects section ────────────────────────────────────────────────────────
+async function loadProjects() {
+  const projects = await send('getProjects');
+  const list = document.getElementById('project-list');
+  list.innerHTML = '';
+  if (!projects.length) return;
+  for (const p of projects) {
+    const row = document.createElement('div');
+    row.className = 'row proj-row';
+    row.innerHTML =
+      `<span class="proj-color-chip" style="background:${esc(p.color)}"></span>` +
+      `<span class="grow" style="font-size:0.9rem">${esc(p.title)}</span>`;
+    const del = document.createElement('button');
+    del.className = 'icon ghost-danger';
+    del.title = t('deleteProject');
+    del.textContent = '✕';
+    del.addEventListener('click', async () => {
+      await send('deleteProject', { id: p.id });
+      notify(t('msgProjectDeleted'));
+      loadProjects();
+    });
+    row.appendChild(del);
+    list.appendChild(row);
+  }
+}
+
+document.getElementById('add-proj').addEventListener('click', async () => {
+  const title = document.getElementById('proj-name').value.trim();
+  if (!title) return;
+  const color = document.getElementById('proj-color').value;
+  await send('addProject', { title, color });
+  document.getElementById('proj-name').value = '';
+  notify(t('msgProjectSaved'));
+  loadProjects();
+});
+
 // ── init ────────────────────────────────────────────────────────────────────
 watchLang();
 await initI18n();
 els.langSelect.value = await getLang();
 load().catch((err) => showError(err.message));
+loadProjects().catch((err) => showError(err.message));

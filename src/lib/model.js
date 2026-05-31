@@ -38,8 +38,8 @@ export function createWeekFile(deviceId, week, year) {
   };
 }
 
-export function createTask(title, id = shortId()) {
-  return { id, title, subtasks: [] };
+export function createTask(title, id = shortId(), projectId = null) {
+  return { id, title, projectId, subtasks: [] };
 }
 
 export function createSubtask(title, id = shortId(), description = '') {

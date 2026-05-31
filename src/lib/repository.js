@@ -18,7 +18,7 @@ import {
   createLog,
   touch,
 } from './model.js';
-import { aggregateReport } from './aggregate.js';
+import { aggregateReport, aggregateByDay } from './aggregate.js';
 
 /** The Jalali { week, year } for a timestamp (defaults to now). */
 export function weekOf(date = new Date()) {
@@ -254,6 +254,32 @@ export async function getReportForWeeks(weeks) {
 export async function getReportForDateRange(fromDate, toDate) {
   const weeks = weeksBetween(fromDate, toDate);
   return getReportForWeeks(weeks);
+}
+
+/** Same date range but returns daily breakdown: [{ day, tasks }]. */
+export async function getReportByDay(fromDate, toDate) {
+  const weeks = weeksBetween(fromDate, toDate);
+  const wanted = new Set(weeks.map((w) => `${w.year}-${w.week}`));
+  const all = await listAllWeekFiles();
+  const files = [];
+  for (const entry of all) {
+    if (wanted.has(`${entry.year}-${entry.week}`)) {
+      const file = await readFile(entry.name);
+      if (file) files.push(file);
+    }
+  }
+  return aggregateByDay(files);
+}
+
+/** Assign a task to a project (or clear with projectId=null). */
+export async function setTaskProject(taskId, projectId) {
+  const { week, year } = weekOf();
+  const file = await loadOwnWeekFile(week, year);
+  const task = file.tasks.find((t) => t.id === taskId);
+  if (task) {
+    task.projectId = projectId || null;
+    await writeFile(file);
+  }
 }
 
 /** Distinct { week, year } keys covering the inclusive date range. */

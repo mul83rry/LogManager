@@ -66,6 +66,18 @@ const STRINGS = {
     deleteInterval: 'حذف بازه',
     noLogs: 'هنوز لاگی ثبت نشده.',
     noRange: 'بدون بازه کامل',
+    // projects
+    projectsSection: 'پروژه‌ها',
+    addProjectBtn: '+ پروژه',
+    projectNamePlaceholder: 'نام پروژه...',
+    deleteProject: 'حذف پروژه',
+    assignProject: 'پروژه...',
+    noProject: 'بدون پروژه',
+    msgProjectSaved: 'پروژه ذخیره شد.',
+    msgProjectDeleted: 'پروژه حذف شد.',
+    // summary chart
+    totalTime: 'مجموع',
+    topTask: 'برترین',
     // options
     settingsTitle: 'تنظیمات',
     deviceSection: 'دستگاه',
@@ -147,6 +159,18 @@ const STRINGS = {
     deleteInterval: 'Delete interval',
     noLogs: 'No logs yet.',
     noRange: 'No complete range',
+    // projects
+    projectsSection: 'Projects',
+    addProjectBtn: '+ Project',
+    projectNamePlaceholder: 'Project name...',
+    deleteProject: 'Delete project',
+    assignProject: 'Project...',
+    noProject: 'No project',
+    msgProjectSaved: 'Project saved.',
+    msgProjectDeleted: 'Project deleted.',
+    // summary chart
+    totalTime: 'Total',
+    topTask: 'Top',
     settingsTitle: 'Settings',
     deviceSection: 'Device',
     deviceIdLabel: 'ID',

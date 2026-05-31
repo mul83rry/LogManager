@@ -139,6 +139,7 @@ async function loadRange(from, to) {
       toDate: to.toISOString(),
     });
     renderReport(report);
+    renderSummary(report, state?.projects || []);
     const d0 = formatJalaliDateTime(from).split(' ')[0];
     const d1 = formatJalaliDateTime(to).split(' ')[0];
     els.rangeSummary.textContent = `${d0} ${t('toLabel')} ${d1}`;
@@ -148,6 +149,189 @@ async function loadRange(from, to) {
     els.error.textContent = err.message;
     els.error.hidden = false;
   }
+}
+
+// ─── summary / charts ──────────────────────────────────────────────────────
+
+function renderSummary(report, projects) {
+  const section = document.getElementById('summary-section');
+  if (!report.totalSeconds) { section.hidden = true; return; }
+  section.hidden = false;
+
+  document.getElementById('summary-total').textContent = formatDuration(report.totalSeconds);
+  const top = [...report.tasks].sort((a, b) => b.totalSeconds - a.totalSeconds)[0];
+  document.getElementById('summary-top').textContent = top ? top.title : '—';
+
+  const taskColors = buildColorMap(report.tasks, projects);
+
+  const chartWrap = document.getElementById('chart-bars-wrap');
+  chartWrap.innerHTML = '';
+  if (report.byDay?.length) {
+    chartWrap.appendChild(buildBarChartSvg(report.byDay, taskColors));
+  }
+
+  const donutWrap = document.getElementById('donut-wrap');
+  donutWrap.innerHTML = '';
+  donutWrap.appendChild(buildDonutSvg(report.tasks, taskColors, report.totalSeconds));
+
+  const projList = document.getElementById('proj-list-chart');
+  projList.innerHTML = '';
+  const maxSec = Math.max(...report.tasks.map((t) => t.totalSeconds), 1);
+  for (const task of [...report.tasks].sort((a, b) => b.totalSeconds - a.totalSeconds)) {
+    if (!task.totalSeconds) continue;
+    const pct = Math.round((task.totalSeconds / report.totalSeconds) * 100);
+    const barPct = (task.totalSeconds / maxSec) * 100;
+    const color = taskColors.get(task.id) || '#3b82f6';
+    const row = document.createElement('div');
+    row.className = 'proj-chart-row';
+    row.innerHTML =
+      `<span class="proj-chart-name">${escapeHtml(task.title)}</span>` +
+      `<span class="proj-chart-time mono">${formatDuration(task.totalSeconds)}</span>` +
+      `<div class="proj-chart-bar-wrap"><div class="proj-chart-bar" style="width:${barPct.toFixed(1)}%;background:${color}"></div></div>` +
+      `<span class="proj-chart-pct muted">${pct}%</span>`;
+    projList.appendChild(row);
+  }
+}
+
+function buildColorMap(tasks, projects) {
+  const projMap = new Map((projects || []).map((p) => [p.id, p.color]));
+  const fallback = ['#3b82f6', '#ec4899', '#eab308', '#22c55e', '#8b5cf6', '#f97316', '#06b6d4', '#ef4444'];
+  const colorMap = new Map();
+  let idx = 0;
+  for (const task of tasks) {
+    const c = (task.projectId && projMap.get(task.projectId)) || fallback[idx++ % fallback.length];
+    colorMap.set(task.id, c);
+  }
+  return colorMap;
+}
+
+function buildBarChartSvg(byDay, taskColors) {
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const n = byDay.length;
+  const CHART_H = 110;
+  const LABEL_TOP = 16; // space above bars for total labels
+  const LABEL_BTM = 18; // space below bars for day labels
+  const TOTAL_H = CHART_H + LABEL_TOP + LABEL_BTM;
+  const BAR_W = Math.max(12, Math.min(38, Math.floor(260 / n) - 4));
+  const GAP = Math.max(2, Math.floor((260 - n * BAR_W) / Math.max(n - 1, 1)));
+  const CHART_W = n * (BAR_W + GAP) - GAP;
+
+  const maxDay = Math.max(...byDay.map((d) => d.tasks.reduce((s, t) => s + t.seconds, 0)), 1);
+
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${CHART_W} ${TOTAL_H}`);
+  svg.setAttribute('width', '100%');
+  svg.style.display = 'block';
+  svg.style.overflow = 'visible';
+
+  byDay.forEach(({ day, tasks }, i) => {
+    const dayTotal = tasks.reduce((s, t) => s + t.seconds, 0);
+    const x = i * (BAR_W + GAP);
+    const chartBottom = LABEL_TOP + CHART_H;
+
+    // Stacked bars (bottom to top, sorted by task id for consistency)
+    let yBottom = chartBottom;
+    for (const task of [...tasks].sort((a, b) => a.id.localeCompare(b.id))) {
+      const segH = Math.max(1, (task.seconds / maxDay) * CHART_H);
+      const rect = document.createElementNS(svgNS, 'rect');
+      rect.setAttribute('x', x);
+      rect.setAttribute('y', yBottom - segH);
+      rect.setAttribute('width', BAR_W);
+      rect.setAttribute('height', segH);
+      rect.setAttribute('fill', taskColors.get(task.id) || '#3b82f6');
+      rect.setAttribute('rx', '2');
+      svg.appendChild(rect);
+      yBottom -= segH;
+    }
+
+    // Total label above bar
+    if (dayTotal > 0) {
+      const totalBarH = (dayTotal / maxDay) * CHART_H;
+      const lbl = document.createElementNS(svgNS, 'text');
+      lbl.setAttribute('x', x + BAR_W / 2);
+      lbl.setAttribute('y', chartBottom - totalBarH - 3);
+      lbl.setAttribute('text-anchor', 'middle');
+      lbl.setAttribute('font-size', '8');
+      lbl.setAttribute('fill', '#94a3b8');
+      lbl.textContent = fmtShort(dayTotal);
+      svg.appendChild(lbl);
+    }
+
+    // Day label below bar
+    const d = new Date(day + 'T12:00:00');
+    const dayLbl = document.createElementNS(svgNS, 'text');
+    dayLbl.setAttribute('x', x + BAR_W / 2);
+    dayLbl.setAttribute('y', TOTAL_H - 3);
+    dayLbl.setAttribute('text-anchor', 'middle');
+    dayLbl.setAttribute('font-size', '8');
+    dayLbl.setAttribute('fill', '#64748b');
+    dayLbl.textContent = DAY_ABBR[d.getDay()] + ' ' + d.getDate();
+    svg.appendChild(dayLbl);
+  });
+
+  return svg;
+}
+
+const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function fmtShort(secs) {
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}h` : `${m}m`;
+}
+
+function buildDonutSvg(tasks, taskColors, totalSec) {
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.style.width = '80px';
+  svg.style.height = '80px';
+  svg.style.flexShrink = '0';
+
+  const CX = 50, CY = 50, R_OUT = 44, R_IN = 30;
+  let angle = -90;
+
+  for (const task of tasks) {
+    if (!task.totalSeconds) continue;
+    const sweep = (task.totalSeconds / totalSec) * 360;
+    const color = taskColors.get(task.id) || '#3b82f6';
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', donutArc(CX, CY, R_OUT, R_IN, angle, angle + sweep));
+    path.setAttribute('fill', color);
+    svg.appendChild(path);
+    angle += sweep;
+  }
+
+  // center text
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const txt = document.createElementNS(svgNS, 'text');
+  txt.setAttribute('x', '50');
+  txt.setAttribute('y', '50');
+  txt.setAttribute('text-anchor', 'middle');
+  txt.setAttribute('dominant-baseline', 'central');
+  txt.setAttribute('font-size', '12');
+  txt.setAttribute('fill', '#e2e8f0');
+  txt.setAttribute('font-weight', 'bold');
+  txt.textContent = `${h}:${String(m).padStart(2, '0')}`;
+  svg.appendChild(txt);
+
+  return svg;
+}
+
+function donutArc(cx, cy, ro, ri, startDeg, endDeg) {
+  const rad = (d) => (d * Math.PI) / 180;
+  const pt = (deg, r) => ({ x: cx + r * Math.cos(rad(deg)), y: cy + r * Math.sin(rad(deg)) });
+  const large = (endDeg - startDeg) > 180 ? 1 : 0;
+  const [o1, o2, i1, i2] = [pt(startDeg, ro), pt(endDeg, ro), pt(startDeg, ri), pt(endDeg, ri)];
+  const f = (v) => v.toFixed(3);
+  return [
+    `M ${f(o1.x)} ${f(o1.y)}`,
+    `A ${ro} ${ro} 0 ${large} 1 ${f(o2.x)} ${f(o2.y)}`,
+    `L ${f(i2.x)} ${f(i2.y)}`,
+    `A ${ri} ${ri} 0 ${large} 0 ${f(i1.x)} ${f(i1.y)}`,
+    'Z',
+  ].join(' ');
 }
 
 function renderReport(report) {

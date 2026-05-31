@@ -11,6 +11,18 @@
     <main>
       <h1 data-i18n="settingsTitle">تنظیمات</h1>
 
+      <!-- پروژه‌ها -->
+      <section class="card">
+        <h2 data-i18n="projectsSection">پروژه‌ها</h2>
+        <div id="project-list"></div>
+        <div class="row" style="margin-top:0.5rem;gap:0.4rem">
+          <input type="text" id="proj-name" class="grow"
+                 data-i18n-ph="projectNamePlaceholder" placeholder="نام پروژه..." />
+          <input type="color" id="proj-color" class="color-input" value="#3b82f6" />
+          <button id="add-proj" class="primary" data-i18n="addProjectBtn">+ پروژه</button>
+        </div>
+      </section>
+
       <!-- زبان -->
       <section class="card">
         <h2 data-i18n="langSection">زبان</h2>

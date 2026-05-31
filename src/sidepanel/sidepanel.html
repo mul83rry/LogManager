@@ -67,6 +67,25 @@
         </div>
       </section>
 
+      <!-- visual summary (charts) -->
+      <section class="card summary-card" id="summary-section" hidden>
+        <div class="summary-stats">
+          <div class="stat-chip">
+            <div class="stat-lbl" data-i18n="totalTime">مجموع</div>
+            <div class="stat-val mono" id="summary-total">—</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-lbl" data-i18n="topTask">برترین</div>
+            <div class="stat-val" id="summary-top">—</div>
+          </div>
+        </div>
+        <div id="chart-bars-wrap" class="chart-bars-wrap"></div>
+        <div class="summary-bottom">
+          <div id="donut-wrap" class="donut-wrap"></div>
+          <div id="proj-list-chart" class="proj-list-chart"></div>
+        </div>
+      </section>
+
       <section class="card">
         <div class="row between">
           <h2 data-i18n="reportTitle">گزارش</h2>

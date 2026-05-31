@@ -64,6 +64,10 @@ function renderTaskList(container, state, onRefresh) {
     });
     head.appendChild(titleSpan);
 
+    // project dot
+    const projects = state.projects || [];
+    head.appendChild(buildProjectBtn(task, projects, onRefresh));
+
     const actions = document.createElement('div');
     actions.className = 'row task-actions';
     const addSubBtn = iconBtn('+', '', t('addSubtaskTitle'));
@@ -402,6 +406,47 @@ function makeDescriptionEditor(taskId, sub, onRefresh) {
   });
   ta.addEventListener('keydown', (e) => { if (e.key === 'Escape') ta.blur(); });
   return ta;
+}
+
+function buildProjectBtn(task, projects, onRefresh) {
+  const proj = projects.find((p) => p.id === task.projectId);
+  const btn = document.createElement('button');
+  btn.className = 'icon ghost proj-dot-btn';
+  btn.title = proj ? proj.title : t('assignProject');
+  btn.style.cssText = `width:14px;height:14px;min-width:14px;padding:0;border-radius:50%;` +
+    `background:${proj ? proj.color : 'var(--border)'};border:none;flex-shrink:0;`;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const existing = btn.parentElement?.querySelector('.proj-menu');
+    if (existing) { existing.remove(); return; }
+    const menu = document.createElement('div');
+    menu.className = 'proj-menu';
+
+    const allOpts = [{ id: null, title: t('noProject'), color: 'var(--border)' }, ...projects];
+    for (const p of allOpts) {
+      const item = document.createElement('div');
+      item.className = 'proj-menu-item';
+      item.innerHTML =
+        `<span class="proj-dot" style="background:${p.color}"></span>${esc(p.title)}`;
+      item.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        await send('setTaskProject', { taskId: task.id, projectId: p.id });
+        menu.remove();
+        onRefresh();
+      });
+      menu.appendChild(item);
+    }
+    btn.after(menu);
+    const close = (ev) => {
+      if (!menu.contains(ev.target) && ev.target !== btn) {
+        menu.remove();
+        document.removeEventListener('click', close);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', close), 0);
+  });
+  return btn;
 }
 
 function iconBtn(symbol, variant, tooltip = '') {

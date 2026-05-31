@@ -17,6 +17,8 @@ import {
   addManualInterval,
   appendLog,
   getReportForDateRange,
+  getReportByDay,
+  setTaskProject,
   getReportForWeeks,
   weekOf,
   listAllWeekFiles,
@@ -26,6 +28,7 @@ import {
   setCloudSettings,
   getProvider,
 } from '../lib/cloud/provider.js';
+import { getProjects, addProject, updateProject, deleteProject } from '../lib/projects.js';
 
 const ACTIVE_KEY = 'activeTimers';
 
@@ -55,8 +58,39 @@ function scheduleRollover() {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === 'rollover') {
     await ensureCurrentWeekFile();
+    await checkBreakNotifications();
   }
 });
+
+// --- break notifications -----------------------------------------------------
+
+async function checkBreakNotifications() {
+  const timers = await getActiveTimers();
+  if (!timers.length) return;
+  const { lang } = await chrome.storage.local.get('lang');
+  const isEn = lang === 'en';
+  const now = Date.now();
+  let changed = false;
+  for (const timer of timers) {
+    const elapsedMin = (now - new Date(timer.startTimestamp)) / 60000;
+    const lastNotifMin = timer.breakNotifiedAt
+      ? (now - new Date(timer.breakNotifiedAt)) / 60000
+      : Infinity;
+    if (elapsedMin >= 30 && lastNotifMin >= 30) {
+      chrome.notifications.create(`break-${timer.subtaskId}`, {
+        type: 'basic',
+        iconUrl: chrome.runtime.getURL('/icons/icon48.png'),
+        title: isEn ? '⏸ Time for a break!' : '⏸ زمان استراحت!',
+        message: isEn
+          ? `"${timer.subtaskTitle}" has been running for 30+ minutes.`
+          : `«${timer.subtaskTitle}» بیش از ۳۰ دقیقه در حال اجراست.`,
+      });
+      timer.breakNotifiedAt = new Date(now).toISOString();
+      changed = true;
+    }
+  }
+  if (changed) await setActiveTimers(timers);
+}
 
 // --- active timer state ------------------------------------------------------
 
@@ -139,11 +173,12 @@ async function stopTimer(subtaskId) {
 
 const handlers = {
   async getState() {
-    const [device, file, timers, cloud] = await Promise.all([
+    const [device, file, timers, cloud, projects] = await Promise.all([
       getDevice(),
       getCurrentWeekFile(),
       getActiveTimers(),
       getCloudSettings(),
+      getProjects(),
     ]);
     const provider = await getProvider();
     return {
@@ -153,6 +188,7 @@ const handlers = {
       file,
       activeTimers: timers,
       cloud: { ...cloud, connected: await provider.isConnected() },
+      projects,
     };
   },
 
@@ -167,6 +203,7 @@ const handlers = {
   deleteSubtask: ({ taskId, subtaskId }) => deleteSubtask(taskId, subtaskId),
   setSubtaskDescription: ({ taskId, subtaskId, description }) =>
     setSubtaskDescription(taskId, subtaskId, description),
+  setTaskProject: ({ taskId, projectId }) => setTaskProject(taskId, projectId),
   updateLog: ({ taskId, subtaskId, logIndex, timestamp }) =>
     updateLog(taskId, subtaskId, logIndex, timestamp),
   deleteLog: ({ taskId, subtaskId, logIndex }) =>
@@ -177,10 +214,22 @@ const handlers = {
   startTimer: ({ taskId, subtaskId }) => startTimer(taskId, subtaskId),
   stopTimer: ({ subtaskId }) => stopTimer(subtaskId),
 
-  getReportForDateRange: ({ fromDate, toDate }) =>
-    getReportForDateRange(new Date(fromDate), new Date(toDate)),
+  getReportForDateRange: async ({ fromDate, toDate }) => {
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+    const [report, byDay] = await Promise.all([
+      getReportForDateRange(from, to),
+      getReportByDay(from, to),
+    ]);
+    return { ...report, byDay };
+  },
   getThisWeekReport: () => getReportForWeeks([weekOf()]),
   listWeekFiles: () => listAllWeekFiles(),
+
+  getProjects: () => getProjects(),
+  addProject: ({ title, color }) => addProject(title, color),
+  updateProject: ({ id, patches }) => updateProject(id, patches),
+  deleteProject: ({ id }) => deleteProject(id),
 
   setDeviceLabel: async ({ label }) => {
     const device = await setDeviceLabel(label);

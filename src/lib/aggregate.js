@@ -29,10 +29,11 @@ export function mergeWeekFiles(files) {
     for (const task of file.tasks || []) {
       let mTask = taskMap.get(task.id);
       if (!mTask) {
-        mTask = { id: task.id, title: task.title, subtasks: new Map() };
+        mTask = { id: task.id, title: task.title, projectId: task.projectId || null, subtasks: new Map() };
         taskMap.set(task.id, mTask);
-      } else if (task.title != null) {
-        mTask.title = task.title;
+      } else {
+        if (task.title != null) mTask.title = task.title;
+        if (task.projectId != null) mTask.projectId = task.projectId;
       }
       for (const subtask of task.subtasks || []) {
         let mSub = mTask.subtasks.get(subtask.id);
@@ -58,7 +59,7 @@ export function mergeWeekFiles(files) {
       mSub.logs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
       subtasks.push(mSub);
     }
-    tasks.push({ id: mTask.id, title: mTask.title, subtasks });
+    tasks.push({ id: mTask.id, title: mTask.title, projectId: mTask.projectId, subtasks });
   }
   return tasks;
 }
@@ -122,6 +123,36 @@ export function intervalRange(intervals) {
 }
 
 /**
+ * Daily breakdown: returns [{ day: 'YYYY-MM-DD', tasks: [{ id, title, projectId, seconds }] }]
+ * sorted by day ascending. Each interval is assigned to the day its start timestamp falls in.
+ */
+export function aggregateByDay(files) {
+  const merged = mergeWeekFiles(files);
+  const dayMap = new Map(); // 'YYYY-MM-DD' -> Map<taskId, entry>
+
+  for (const task of merged) {
+    for (const sub of task.subtasks) {
+      for (const iv of pairIntervals(sub.logs)) {
+        if (!iv.end || iv.duration === 0) continue;
+        const day = iv.start.slice(0, 10);
+        if (!dayMap.has(day)) dayMap.set(day, new Map());
+        const tMap = dayMap.get(day);
+        const cur = tMap.get(task.id);
+        if (cur) {
+          cur.seconds += iv.duration;
+        } else {
+          tMap.set(task.id, { id: task.id, title: task.title, projectId: task.projectId, seconds: iv.duration });
+        }
+      }
+    }
+  }
+
+  return [...dayMap.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, tMap]) => ({ day, tasks: [...tMap.values()] }));
+}
+
+/**
  * Build a full report from week files:
  *   {
  *     tasks: [ {
@@ -150,6 +181,7 @@ export function aggregateReport(files) {
     return {
       id: task.id,
       title: task.title,
+      projectId: task.projectId,
       subtasks,
       totalSeconds: totalSeconds(allIntervals),
       range: intervalRange(allIntervals),

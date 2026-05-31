@@ -20,3 +20,26 @@ code {
   border-radius: 6px;
   word-break: break-all;
 }
+
+/* color input */
+.color-input {
+  width: 2.4rem;
+  height: 2.2rem;
+  padding: 0.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* project list row */
+.proj-row {
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.proj-row:last-child { border-bottom: none; }
+.proj-color-chip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
