@@ -168,7 +168,7 @@ function renderSummary(report, projects) {
   const top = [...report.tasks].sort((a, b) => b.totalSeconds - a.totalSeconds)[0];
   document.getElementById('summary-top').textContent = top ? top.title : '—';
 
-  const taskColors = buildColorMap(report.tasks, projects);
+  const taskColors = buildColorMap(report.tasks);
 
   const chartWrap = document.getElementById('chart-bars-wrap');
   chartWrap.innerHTML = '';
@@ -199,15 +199,16 @@ function renderSummary(report, projects) {
   }
 }
 
-function buildColorMap(tasks, projects) {
-  const projMap = new Map((projects || []).map((p) => [p.id, p.color]));
-  const fallback = ['#3b82f6', '#ec4899', '#eab308', '#22c55e', '#8b5cf6', '#f97316', '#06b6d4', '#ef4444'];
+// Per-task palette — always distinct regardless of project
+const CHART_PALETTE = [
+  '#ff6b6b', '#4ecdc4', '#ffd93d', '#6bcb77', '#a78bfa',
+  '#ff922b', '#f783ac', '#74c0fc', '#a9e34b', '#63e6be',
+  '#e599f7', '#ffa94d', '#66d9e8', '#ffec99', '#b2f2bb',
+];
+
+function buildColorMap(tasks) {
   const colorMap = new Map();
-  let idx = 0;
-  for (const task of tasks) {
-    const c = (task.projectId && projMap.get(task.projectId)) || fallback[idx++ % fallback.length];
-    colorMap.set(task.id, c);
-  }
+  tasks.forEach((task, i) => colorMap.set(task.id, CHART_PALETTE[i % CHART_PALETTE.length]));
   return colorMap;
 }
 
@@ -263,22 +264,26 @@ function buildBarChartSvg(byDay, taskColors) {
       svg.appendChild(lbl);
     }
 
-    // Day label below bar
+    // Day label below bar — language-aware
     const d = new Date(day + 'T12:00:00');
+    const rtl = document.documentElement.getAttribute('dir') === 'rtl';
+    const abbr = rtl ? DAY_ABBR_FA[d.getDay()] : DAY_ABBR_EN[d.getDay()];
+    const dateNum = rtl ? toPersian(String(d.getDate())) : String(d.getDate());
     const dayLbl = document.createElementNS(svgNS, 'text');
     dayLbl.setAttribute('x', x + BAR_W / 2);
     dayLbl.setAttribute('y', TOTAL_H - 3);
     dayLbl.setAttribute('text-anchor', 'middle');
     dayLbl.setAttribute('font-size', '8');
     dayLbl.setAttribute('fill', '#aaaaaa');
-    dayLbl.textContent = DAY_ABBR[d.getDay()] + ' ' + d.getDate();
+    dayLbl.textContent = abbr + ' ' + dateNum;
     svg.appendChild(dayLbl);
   });
 
   return svg;
 }
 
-const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_ABBR_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_ABBR_FA = ['یک', 'دو', 'سه', 'چه', 'پن', 'جم', 'ش'];
 
 function fmtShort(secs) {
   const h = Math.floor(secs / 3600);
@@ -452,17 +457,19 @@ await initI18n();
 const { panelWidth } = await chrome.storage.local.get('panelWidth');
 if (panelWidth) document.body.style.minWidth = panelWidth + 'px';
 
-// Wait 2 s for the panel to finish expanding to its restored min-width, THEN
-// read the settled width and start polling for changes.
-// (Immediate polling races with panel expansion and saves the pre-expansion value.)
+// Poll for panel-width changes driven by the user dragging the side-panel divider.
+// We do NOT save on init — only when innerWidth actually changes — so the restored
+// min-width is never overwritten by an early read before the panel has settled.
 setTimeout(() => {
-  let _w = window.innerWidth;
-  if (_w > 200) chrome.storage.local.set({ panelWidth: _w });
+  let _prev = window.innerWidth;
   setInterval(() => {
     const w = window.innerWidth;
-    if (w > 200 && w !== _w) { _w = w; chrome.storage.local.set({ panelWidth: w }); }
+    if (w > 200 && w !== _prev) {
+      _prev = w;
+      chrome.storage.local.set({ panelWidth: w });
+    }
   }, 800);
-}, 2000);
+}, 1500);
 
 await refreshTasks();
 setInterval(() => updateElapsed(els.activeList), 1000);
