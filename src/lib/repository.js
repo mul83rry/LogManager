@@ -271,6 +271,17 @@ export async function getReportByDay(fromDate, toDate) {
   return aggregateByDay(files);
 }
 
+/** Set or update a task's creation timestamp. */
+export async function setTaskCreatedAt(taskId, createdAt) {
+  const { week, year } = weekOf();
+  const file = await loadOwnWeekFile(week, year);
+  const task = file.tasks.find((t) => t.id === taskId);
+  if (task) {
+    task.createdAt = createdAt;
+    await writeFile(file);
+  }
+}
+
 /** Assign a task to a project (or clear with projectId=null). */
 export async function setTaskProject(taskId, projectId) {
   const { week, year } = weekOf();

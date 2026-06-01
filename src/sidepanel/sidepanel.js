@@ -146,8 +146,8 @@ async function loadRange(from, to) {
     currentTo = to;
     renderReport(report);
     renderSummary(report, state?.projects || []);
-    const d0 = formatJalaliDateTime(from).split(' ')[0];
-    const d1 = formatJalaliDateTime(to).split(' ')[0];
+    const d0 = fmtJalali(from).split(' ')[0];
+    const d1 = fmtJalali(to).split(' ')[0];
     els.rangeSummary.textContent = `${d0} ${t('toLabel')} ${d1}`;
     els.filterToggle.setAttribute('aria-expanded', 'false');
     els.filterBody.hidden = true;
@@ -374,7 +374,7 @@ function renderReport(report) {
       const rangeEl = document.createElement('div');
       rangeEl.className = 'report-range';
       rangeEl.textContent =
-        `${formatJalaliDateTime(task.range.start)} ← ${formatJalaliDateTime(task.range.end)}`;
+        `${fmtJalali(task.range.start)} ← ${fmtJalali(task.range.end)}`;
       card.appendChild(rangeEl);
     }
 
@@ -429,6 +429,12 @@ document.getElementById('download-md').addEventListener('click', () => {
 });
 
 // ─── helpers ───────────────────────────────────────────────────────────────
+const toPersian = (s) => String(s).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+const fmtJalali = (ts) => {
+  const s = formatJalaliDateTime(ts);
+  return document.documentElement.getAttribute('dir') === 'rtl' ? toPersian(s) : s;
+};
+
 function showError(err) {
   els.error.textContent = err || '';
   els.error.hidden = !err;
@@ -447,14 +453,19 @@ const { panelWidth } = await chrome.storage.local.get('panelWidth');
 if (panelWidth) document.body.style.minWidth = panelWidth + 'px';
 
 // Persist panel width when the user drags the side-panel edge.
+// visualViewport.resize fires reliably when Edge's side-panel divider is dragged.
+// ResizeObserver on documentElement catches layout-driven size changes as a fallback.
 let _resizeTimer;
-new ResizeObserver((entries) => {
-  const width = Math.round(entries[0].contentRect.width);
+const _saveWidth = (w) => {
+  if (w < 200) return;
   clearTimeout(_resizeTimer);
-  _resizeTimer = setTimeout(() => {
-    chrome.storage.local.set({ panelWidth: width });
-  }, 500);
-}).observe(document.body);
+  _resizeTimer = setTimeout(() => chrome.storage.local.set({ panelWidth: Math.round(w) }), 600);
+};
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => _saveWidth(window.visualViewport.width));
+}
+new ResizeObserver((entries) => _saveWidth(entries[0].contentRect.width))
+  .observe(document.documentElement);
 
 await refreshTasks();
 setInterval(() => updateElapsed(els.activeList), 1000);

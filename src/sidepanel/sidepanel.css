@@ -36,16 +36,37 @@ body {
   margin-top: 0.6rem;
   margin-bottom: 0.25rem;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
 }
 .day-header:first-child { margin-top: 0; }
+.day-header:hover .day-name { color: var(--primary); }
 .day-name {
   font-weight: 700;
   font-size: 0.92rem;
   color: var(--text);
+  transition: color 0.15s;
 }
-.day-date {
-  font-size: 0.7rem;
+.day-date { font-size: 0.7rem; }
+.day-chevron {
+  margin-inline-start: auto;
+  font-size: 0.6rem;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+  display: inline-block;
 }
+.day-header.collapsed .day-chevron { transform: rotate(-90deg); }
+
+/* task creation date row */
+.task-created-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1rem 0 0.3rem;
+  font-size: 0.75rem;
+}
+.task-created-label { letter-spacing: 0.02em; }
+.task-created-date { font-size: 0.75rem; }
 
 /* task title + project dot wrapper */
 .task-title-group {

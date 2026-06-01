@@ -12,6 +12,7 @@ import {
   deleteTask,
   deleteSubtask,
   setSubtaskDescription,
+  setTaskCreatedAt,
   updateLog,
   deleteLog,
   addManualInterval,
@@ -203,6 +204,7 @@ const handlers = {
   deleteSubtask: ({ taskId, subtaskId }) => deleteSubtask(taskId, subtaskId),
   setSubtaskDescription: ({ taskId, subtaskId, description }) =>
     setSubtaskDescription(taskId, subtaskId, description),
+  setTaskCreatedAt: ({ taskId, createdAt }) => setTaskCreatedAt(taskId, createdAt),
   setTaskProject: ({ taskId, projectId }) => setTaskProject(taskId, projectId),
   updateLog: ({ taskId, subtaskId, logIndex, timestamp }) =>
     updateLog(taskId, subtaskId, logIndex, timestamp),

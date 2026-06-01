@@ -39,7 +39,7 @@ export function createWeekFile(deviceId, week, year) {
 }
 
 export function createTask(title, id = shortId(), projectId = null) {
-  return { id, title, projectId, subtasks: [] };
+  return { id, title, projectId, createdAt: new Date().toISOString(), subtasks: [] };
 }
 
 export function createSubtask(title, id = shortId(), description = '') {

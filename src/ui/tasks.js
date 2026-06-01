@@ -5,6 +5,14 @@ import { t } from '../lib/i18n.js';
 const FA_DAYS = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
 const EN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+/** Convert Western digits to Persian digits (۰–۹). */
+const toPersian = (s) => String(s).replace(/[0-9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+const isRtl = () => document.documentElement.getAttribute('dir') === 'rtl';
+const jalaliStr = (d) => {
+  const s = formatJalaliDate(d);
+  return isRtl() ? toPersian(s) : s;
+};
+
 export function renderTasks(activeEl, taskListEl, state, onRefresh) {
   renderActive(activeEl, state, onRefresh);
   renderTaskList(taskListEl, state, onRefresh);
@@ -71,10 +79,29 @@ function renderTaskList(container, state, onRefresh) {
   const sortedDays = [...dayGroups.keys()].sort((a, b) => b.localeCompare(a));
 
   for (const day of sortedDays) {
-    container.appendChild(buildDayHeader(day));
-    for (const task of dayGroups.get(day)) {
-      container.appendChild(buildTaskCard(task, running, state, onRefresh));
+    const header = buildDayHeader(day);
+    const group = document.createElement('div');
+    group.className = 'day-group';
+
+    // Restore collapsed state from sessionStorage
+    const isCollapsed = sessionStorage.getItem('dc-' + day) === '1';
+    if (isCollapsed) {
+      group.hidden = true;
+      header.classList.add('collapsed');
     }
+
+    header.addEventListener('click', () => {
+      const nowCollapsed = !group.hidden;
+      group.hidden = nowCollapsed;
+      header.classList.toggle('collapsed', nowCollapsed);
+      sessionStorage.setItem('dc-' + day, nowCollapsed ? '1' : '0');
+    });
+
+    container.appendChild(header);
+    for (const task of dayGroups.get(day)) {
+      group.appendChild(buildTaskCard(task, running, state, onRefresh));
+    }
+    container.appendChild(group);
   }
 
   for (const task of noDayTasks) {
@@ -96,14 +123,14 @@ function getLastLogDay(task) {
 
 function buildDayHeader(day) {
   const d = new Date(day + 'T12:00:00');
-  const isRtl = document.documentElement.getAttribute('dir') === 'rtl';
-  const dayName = isRtl ? FA_DAYS[d.getDay()] : EN_DAYS[d.getDay()];
-  const jalali = formatJalaliDate(d);
+  const dayName = isRtl() ? FA_DAYS[d.getDay()] : EN_DAYS[d.getDay()];
+  const jalali = jalaliStr(d);
   const header = document.createElement('div');
   header.className = 'day-header';
   header.innerHTML =
     `<span class="day-name">${esc(dayName)}</span>` +
-    `<span class="day-date muted">${esc(jalali)} · ${esc(day)}</span>`;
+    `<span class="day-date muted">${esc(jalali)} · ${esc(day)}</span>` +
+    `<span class="day-chevron">▾</span>`;
   return header;
 }
 
@@ -146,10 +173,53 @@ function buildTaskCard(task, running, state, onRefresh) {
   head.appendChild(actions);
   card.appendChild(head);
 
+  // creation date row (shown only if task has createdAt)
+  if (task.createdAt) {
+    card.appendChild(buildCreatedAtRow(task, onRefresh));
+  }
+
   for (const sub of task.subtasks) {
     card.appendChild(buildSubtaskRow(task.id, sub, running.has(sub.id), onRefresh));
   }
   return card;
+}
+
+function buildCreatedAtRow(task, onRefresh) {
+  const row = document.createElement('div');
+  row.className = 'task-created-row';
+
+  const render = (ts) => {
+    row.innerHTML = '';
+    const label = document.createElement('span');
+    label.className = 'task-created-label muted';
+    label.textContent = t('createdAtLabel') + ':';
+    const dateSpan = document.createElement('span');
+    dateSpan.className = 'task-created-date muted mono';
+    const d = new Date(ts);
+    dateSpan.textContent = isRtl() ? toPersian(jalaliStr(d)) : jalaliStr(d);
+    const editBtn = iconBtn('✎', 'ghost', t('saveTitle'));
+    editBtn.style.fontSize = '0.75rem';
+    editBtn.addEventListener('click', () => {
+      row.innerHTML = '';
+      const input = document.createElement('input');
+      input.type = 'datetime-local';
+      input.className = 'log-dt-input';
+      input.value = toDatetimeLocal(ts);
+      const save = iconBtn('✓', 'primary log-confirm-btn', t('saveTitle'));
+      const cancel = iconBtn('✕', 'ghost', t('cancelTitle'));
+      save.addEventListener('click', async () => {
+        const newTs = fromDatetimeLocal(input.value);
+        await send('setTaskCreatedAt', { taskId: task.id, createdAt: newTs });
+        render(newTs);
+      });
+      cancel.addEventListener('click', () => render(ts));
+      row.append(label, input, save, cancel);
+    });
+    row.append(label, dateSpan, editBtn);
+  };
+
+  render(task.createdAt);
+  return row;
 }
 
 // ── subtask row ────────────────────────────────────────────────────────────
@@ -477,8 +547,10 @@ function buildProjectBtn(task, projects, onRefresh) {
         'border-radius:50%;flex-shrink:0;';
       const colorLabel = document.createElement('span');
       colorLabel.textContent = proj.title;
+      // Prevent the document close-handler from firing when clicking into the color picker
+      colorInput.addEventListener('click', (e) => e.stopPropagation());
       colorInput.addEventListener('change', async () => {
-        await send('updateProject', { id: proj.id, color: colorInput.value });
+        await send('updateProject', { id: proj.id, patches: { color: colorInput.value } });
         menu.remove();
         onRefresh();
       });
