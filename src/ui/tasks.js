@@ -62,11 +62,12 @@ function renderTaskList(container, state, onRefresh) {
     return;
   }
 
-  // Group tasks by the date of their most recent log entry
+  // Group tasks by CREATION date (ascending — oldest group first).
+  // For tasks without createdAt, fall back to their earliest log timestamp.
   const dayGroups = new Map();
   const noDayTasks = [];
   for (const task of tasks) {
-    const day = getLastLogDay(task);
+    const day = getCreationDay(task);
     if (day) {
       if (!dayGroups.has(day)) dayGroups.set(day, []);
       dayGroups.get(day).push(task);
@@ -75,8 +76,8 @@ function renderTaskList(container, state, onRefresh) {
     }
   }
 
-  // Most-recent day first
-  const sortedDays = [...dayGroups.keys()].sort((a, b) => b.localeCompare(a));
+  // Ascending — oldest creation day first
+  const sortedDays = [...dayGroups.keys()].sort((a, b) => a.localeCompare(b));
 
   for (const day of sortedDays) {
     const header = buildDayHeader(day);
@@ -97,8 +98,10 @@ function renderTaskList(container, state, onRefresh) {
       sessionStorage.setItem('dc-' + day, nowCollapsed ? '1' : '0');
     });
 
+    const dayTasks = dayGroups.get(day)
+      .sort((a, b) => (getEffectiveCreatedAt(a) || '').localeCompare(getEffectiveCreatedAt(b) || ''));
     container.appendChild(header);
-    for (const task of dayGroups.get(day)) {
+    for (const task of dayTasks) {
       group.appendChild(buildTaskCard(task, running, state, onRefresh));
     }
     container.appendChild(group);
@@ -109,15 +112,23 @@ function renderTaskList(container, state, onRefresh) {
   }
 }
 
-function getLastLogDay(task) {
-  let lastTs = null;
+/** Returns the earliest available timestamp for a task (createdAt or first log). */
+function getEffectiveCreatedAt(task) {
+  if (task.createdAt) return task.createdAt;
+  let firstTs = null;
   for (const sub of task.subtasks) {
     for (const log of (sub.logs || [])) {
-      if (!lastTs || log.timestamp > lastTs) lastTs = log.timestamp;
+      if (!firstTs || log.timestamp < firstTs) firstTs = log.timestamp;
     }
   }
-  if (!lastTs) return null;
-  const d = new Date(lastTs);
+  return firstTs;
+}
+
+/** Returns "YYYY-MM-DD" of the task's effective creation date, or null. */
+function getCreationDay(task) {
+  const ts = getEffectiveCreatedAt(task);
+  if (!ts) return null;
+  const d = new Date(ts);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 

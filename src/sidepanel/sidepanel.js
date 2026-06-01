@@ -452,17 +452,17 @@ await initI18n();
 const { panelWidth } = await chrome.storage.local.get('panelWidth');
 if (panelWidth) document.body.style.minWidth = panelWidth + 'px';
 
-// Persist panel width by polling window.innerWidth every second.
-// Event-based approaches (resize, visualViewport, ResizeObserver) don't fire
-// when the Edge side-panel divider is dragged, so polling is the only reliable option.
-let _savedWidth = panelWidth || 0;
-setInterval(() => {
-  const w = window.innerWidth;
-  if (w > 200 && w !== _savedWidth) {
-    _savedWidth = w;
-    chrome.storage.local.set({ panelWidth: w });
-  }
-}, 1000);
+// Wait 2 s for the panel to finish expanding to its restored min-width, THEN
+// read the settled width and start polling for changes.
+// (Immediate polling races with panel expansion and saves the pre-expansion value.)
+setTimeout(() => {
+  let _w = window.innerWidth;
+  if (_w > 200) chrome.storage.local.set({ panelWidth: _w });
+  setInterval(() => {
+    const w = window.innerWidth;
+    if (w > 200 && w !== _w) { _w = w; chrome.storage.local.set({ panelWidth: w }); }
+  }, 800);
+}, 2000);
 
 await refreshTasks();
 setInterval(() => updateElapsed(els.activeList), 1000);
