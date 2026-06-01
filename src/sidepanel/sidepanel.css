@@ -14,15 +14,17 @@ body {
 .tab {
   background: transparent;
   border: none;
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-radius: 0;
   padding: 0.4rem 1rem;
   color: var(--muted);
   font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .tab.active {
-  background: var(--surface);
-  color: var(--text);
+  color: var(--primary);
   border-bottom: 2px solid var(--primary);
+  box-shadow: 0 2px 0 var(--primary);
 }
 
 /* task tab */
@@ -37,14 +39,25 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem;
+  padding: 0.45rem 0.5rem;
   border-radius: var(--radius);
   background: var(--surface-2);
+  border: 1px solid var(--primary);
+  box-shadow: var(--glow);
   margin-bottom: 0.4rem;
 }
-.timer .elapsed { font-size: 1.05rem; }
-.timer-sub { font-size: .9rem; font-weight: 600; }
-.timer-task { font-size: .78rem; }
+.timer .elapsed {
+  font-size: 1.05rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+.timer .elapsed::before {
+  content: '▐ ';
+  animation: blink 1s step-end infinite;
+  font-size: 0.9em;
+}
+.timer-sub { font-size: .9rem; font-weight: 700; color: var(--primary); }
+.timer-task { font-size: .78rem; color: var(--muted); }
 
 .task {
   border: 1px solid var(--border);
@@ -52,6 +65,7 @@ body {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
 }
+.task:hover { border-color: rgba(0, 204, 68, 0.3); }
 .task > .row { margin-bottom: 0.35rem; }
 .task .title { font-weight: 600; }
 
@@ -75,12 +89,14 @@ body {
   border-radius: 0;
   padding: 0.65rem 0.75rem;
   text-align: right;
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--text);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--muted);
   cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
-.filter-toggle:hover { background: var(--surface-2); }
+.filter-toggle:hover { background: var(--surface-2); color: var(--primary); }
 .filter-toggle .chevron {
   font-size: 0.7rem;
   color: var(--muted);
@@ -103,7 +119,7 @@ body {
   color: var(--muted);
 }
 
-/* ── visual report cards ───────────────────────────────────────────────── */
+/* ── visual report cards ─────────────────────────────────────────────── */
 .report-task {
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -111,8 +127,8 @@ body {
   margin-bottom: 0.6rem;
   background: var(--surface);
 }
+.report-task:hover { border-color: rgba(0, 204, 68, 0.25); }
 
-/* task header */
 .report-task-head {
   display: flex;
   justify-content: space-between;
@@ -122,6 +138,7 @@ body {
 .report-task-head .rtitle {
   font-weight: 700;
   font-size: 0.95rem;
+  color: var(--primary);
 }
 .report-task-head .rdur {
   font-size: 1.05rem;
@@ -132,34 +149,31 @@ body {
   margin-inline-start: 0.5rem;
 }
 
-/* duration bar */
 .dur-bar {
-  height: 5px;
+  height: 4px;
   background: var(--surface-2);
-  border-radius: 3px;
+  border-radius: 0;
   margin: 0.2rem 0 0.4rem;
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 .dur-bar-fill {
   height: 100%;
-  border-radius: 3px;
   background: var(--primary);
   transition: width 0.4s ease;
+  box-shadow: 0 0 4px rgba(0, 204, 68, 0.5);
 }
-.dur-bar-fill.sub { background: rgba(59, 130, 246, 0.45); }
+.dur-bar-fill.sub { background: rgba(0, 204, 68, 0.4); box-shadow: none; }
 
-/* date range */
 .report-range {
   font-size: 0.76rem;
   color: var(--muted);
   margin-bottom: 0.4rem;
+  font-style: italic;
 }
 
-/* subtask list */
 .report-subs { border-top: 1px solid var(--border); padding-top: 0.35rem; }
-.report-sub-item {
-  padding: 0.3rem 0;
-}
+.report-sub-item { padding: 0.3rem 0; }
 .report-sub-row {
   display: flex;
   justify-content: space-between;
@@ -184,11 +198,12 @@ body {
 textarea {
   width: 100%;
   resize: vertical;
-  font-family: 'Consolas', monospace;
+  font-family: inherit;
   line-height: 1.6;
+  color-scheme: dark;
 }
 
-/* ── summary / charts ──────────────────────────────────────────────────── */
+/* ── summary / charts ────────────────────────────────────────────────── */
 .summary-card { padding: 0.65rem 0.7rem; }
 
 .summary-stats {
@@ -199,17 +214,21 @@ textarea {
 .stat-chip {
   flex: 1;
   background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.4rem 0.6rem;
 }
 .stat-lbl {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: var(--muted);
-  margin-bottom: 0.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.15rem;
 }
 .stat-val {
   font-size: 1rem;
   font-weight: 700;
+  color: var(--primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -241,29 +260,31 @@ textarea {
   gap: 0.35rem;
 }
 .proj-chart-name {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .proj-chart-time {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
+  color: var(--muted);
   white-space: nowrap;
 }
 .proj-chart-bar-wrap {
-  width: 50px;
-  height: 6px;
+  width: 48px;
+  height: 5px;
   background: var(--surface-2);
-  border-radius: 3px;
+  border-radius: 0;
   overflow: hidden;
+  border: 1px solid var(--border);
 }
 .proj-chart-bar {
   height: 100%;
-  border-radius: 3px;
   transition: width 0.3s ease;
 }
 .proj-chart-pct {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  color: var(--muted);
   min-width: 2.4rem;
   text-align: end;
 }
