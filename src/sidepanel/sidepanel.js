@@ -452,20 +452,17 @@ await initI18n();
 const { panelWidth } = await chrome.storage.local.get('panelWidth');
 if (panelWidth) document.body.style.minWidth = panelWidth + 'px';
 
-// Persist panel width when the user drags the side-panel edge.
-// visualViewport.resize fires reliably when Edge's side-panel divider is dragged.
-// ResizeObserver on documentElement catches layout-driven size changes as a fallback.
-let _resizeTimer;
-const _saveWidth = (w) => {
-  if (w < 200) return;
-  clearTimeout(_resizeTimer);
-  _resizeTimer = setTimeout(() => chrome.storage.local.set({ panelWidth: Math.round(w) }), 600);
-};
-if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => _saveWidth(window.visualViewport.width));
-}
-new ResizeObserver((entries) => _saveWidth(entries[0].contentRect.width))
-  .observe(document.documentElement);
+// Persist panel width by polling window.innerWidth every second.
+// Event-based approaches (resize, visualViewport, ResizeObserver) don't fire
+// when the Edge side-panel divider is dragged, so polling is the only reliable option.
+let _savedWidth = panelWidth || 0;
+setInterval(() => {
+  const w = window.innerWidth;
+  if (w > 200 && w !== _savedWidth) {
+    _savedWidth = w;
+    chrome.storage.local.set({ panelWidth: w });
+  }
+}, 1000);
 
 await refreshTasks();
 setInterval(() => updateElapsed(els.activeList), 1000);

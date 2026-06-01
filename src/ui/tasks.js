@@ -173,10 +173,8 @@ function buildTaskCard(task, running, state, onRefresh) {
   head.appendChild(actions);
   card.appendChild(head);
 
-  // creation date row (shown only if task has createdAt)
-  if (task.createdAt) {
-    card.appendChild(buildCreatedAtRow(task, onRefresh));
-  }
+  // creation date row (always shown; shows — for tasks without a saved date)
+  card.appendChild(buildCreatedAtRow(task, onRefresh));
 
   for (const sub of task.subtasks) {
     card.appendChild(buildSubtaskRow(task.id, sub, running.has(sub.id), onRefresh));
@@ -188,37 +186,61 @@ function buildCreatedAtRow(task, onRefresh) {
   const row = document.createElement('div');
   row.className = 'task-created-row';
 
-  const render = (ts) => {
-    row.innerHTML = '';
-    const label = document.createElement('span');
-    label.className = 'task-created-label muted';
-    label.textContent = t('createdAtLabel') + ':';
-    const dateSpan = document.createElement('span');
-    dateSpan.className = 'task-created-date muted mono';
-    const d = new Date(ts);
-    dateSpan.textContent = isRtl() ? toPersian(jalaliStr(d)) : jalaliStr(d);
-    const editBtn = iconBtn('✎', 'ghost', t('saveTitle'));
-    editBtn.style.fontSize = '0.75rem';
-    editBtn.addEventListener('click', () => {
-      row.innerHTML = '';
-      const input = document.createElement('input');
-      input.type = 'datetime-local';
-      input.className = 'log-dt-input';
-      input.value = toDatetimeLocal(ts);
-      const save = iconBtn('✓', 'primary log-confirm-btn', t('saveTitle'));
-      const cancel = iconBtn('✕', 'ghost', t('cancelTitle'));
-      save.addEventListener('click', async () => {
-        const newTs = fromDatetimeLocal(input.value);
-        await send('setTaskCreatedAt', { taskId: task.id, createdAt: newTs });
-        render(newTs);
-      });
-      cancel.addEventListener('click', () => render(ts));
-      row.append(label, input, save, cancel);
-    });
-    row.append(label, dateSpan, editBtn);
-  };
+  const label = document.createElement('span');
+  label.className = 'task-created-label muted';
+  label.textContent = t('createdAtLabel') + ':';
 
-  render(task.createdAt);
+  const dateSpan = document.createElement('span');
+  dateSpan.className = 'task-created-date muted mono';
+  dateSpan.title = t('editTitleHint');
+  dateSpan.style.cursor = 'pointer';
+
+  let currentTs = task.createdAt || null;
+
+  const showDate = (ts) => {
+    if (ts) {
+      const d = new Date(ts);
+      dateSpan.textContent = isRtl() ? toPersian(jalaliStr(d)) : jalaliStr(d);
+    } else {
+      dateSpan.textContent = '—';
+    }
+  };
+  showDate(currentTs);
+
+  // Click the date itself to switch to inline editor (mirrors makeEditableTitle)
+  dateSpan.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'datetime-local';
+    input.className = 'log-dt-input';
+    input.style.fontSize = '0.75rem';
+    input.value = currentTs
+      ? toDatetimeLocal(currentTs)
+      : toDatetimeLocal(new Date().toISOString());
+
+    const save = iconBtn('✓', 'primary log-confirm-btn', t('saveTitle'));
+    const cancel = iconBtn('✕', 'ghost log-confirm-btn', t('cancelTitle'));
+
+    const finish = (ts) => {
+      input.replaceWith(dateSpan);
+      save.remove();
+      cancel.remove();
+      showDate(ts);
+    };
+
+    save.addEventListener('click', async () => {
+      const newTs = fromDatetimeLocal(input.value);
+      await send('setTaskCreatedAt', { taskId: task.id, createdAt: newTs });
+      currentTs = newTs;
+      finish(newTs);
+    });
+    cancel.addEventListener('click', () => finish(currentTs));
+
+    dateSpan.replaceWith(input);
+    row.append(save, cancel);
+    input.focus();
+  });
+
+  row.append(label, dateSpan);
   return row;
 }
 
