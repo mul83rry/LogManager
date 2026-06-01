@@ -79,6 +79,12 @@ function renderTaskList(container, state, onRefresh) {
   // Ascending — oldest creation day first
   const sortedDays = [...dayGroups.keys()].sort((a, b) => a.localeCompare(b));
 
+  // Today's key in the same YYYY-MM-DD format used for grouping
+  const today = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+
   for (const day of sortedDays) {
     const dayTasks = dayGroups.get(day)
       .sort((a, b) => (getEffectiveCreatedAt(a) || '').localeCompare(getEffectiveCreatedAt(b) || ''));
@@ -87,7 +93,10 @@ function renderTaskList(container, state, onRefresh) {
     const group = document.createElement('div');
     group.className = 'day-group';
 
-    const isCollapsed = sessionStorage.getItem('dc-' + day) === '1';
+    // Default: today's group open, all others collapsed.
+    // Explicit sessionStorage value ('0' or '1') overrides the default.
+    const saved = sessionStorage.getItem('dc-' + day);
+    const isCollapsed = saved !== null ? saved === '1' : day !== today;
     if (isCollapsed) {
       group.hidden = true;
       header.classList.add('collapsed');
