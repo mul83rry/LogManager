@@ -65,7 +65,7 @@ body {
   padding: 0.5rem;
   margin-bottom: 0.5rem;
 }
-.task:hover { border-color: rgba(0, 204, 68, 0.3); }
+.task:hover { border-color: rgba(255, 255, 255, 0.12); }
 .task > .row { margin-bottom: 0.35rem; }
 .task .title { font-weight: 600; }
 
@@ -127,7 +127,7 @@ body {
   margin-bottom: 0.6rem;
   background: var(--surface);
 }
-.report-task:hover { border-color: rgba(0, 204, 68, 0.25); }
+.report-task:hover { border-color: rgba(255, 255, 255, 0.09); }
 
 .report-task-head {
   display: flex;
@@ -161,9 +161,9 @@ body {
   height: 100%;
   background: var(--primary);
   transition: width 0.4s ease;
-  box-shadow: 0 0 4px rgba(0, 204, 68, 0.5);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.18);
 }
-.dur-bar-fill.sub { background: rgba(0, 204, 68, 0.4); box-shadow: none; }
+.dur-bar-fill.sub { background: rgba(255, 255, 255, 0.25); box-shadow: none; }
 
 .report-range {
   font-size: 0.76rem;

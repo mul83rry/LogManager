@@ -1,15 +1,15 @@
 :root {
   --bg: #0a0a0a;
-  --surface: #0d170d;
-  --surface-2: #111f11;
-  --text: #b8f5b8;
-  --muted: #4a7a4a;
-  --primary: #00cc44;
-  --success: #00cc44;
-  --danger: #cc2200;
-  --border: #1a3a1a;
+  --surface: #111111;
+  --surface-2: #1a1a1a;
+  --text: #e0e0e0;
+  --muted: #606060;
+  --primary: #ffffff;
+  --success: #d0d0d0;
+  --danger: #ff4444;
+  --border: #2a2a2a;
   --radius: 2px;
-  --glow: 0 0 6px rgba(0, 204, 68, 0.25);
+  --glow: 0 0 6px rgba(255, 255, 255, 0.12);
 }
 
 @keyframes blink {
@@ -79,7 +79,7 @@ button.primary {
   border-color: var(--primary);
   font-weight: 700;
 }
-button.primary:hover { box-shadow: 0 0 10px rgba(0, 204, 68, 0.45); }
+button.primary:hover { box-shadow: 0 0 10px rgba(255, 255, 255, 0.18); }
 button.success { background: var(--success); color: #000; border-color: var(--success); }
 button.danger  { background: var(--danger);  color: #fff; border-color: var(--danger);  }
 button.ghost   { background: transparent; border-color: var(--border); color: var(--muted); }
@@ -136,7 +136,7 @@ textarea::placeholder { color: var(--muted); opacity: 0.7; }
   text-transform: uppercase;
 }
 .tag.live {
-  background: rgba(0, 204, 68, 0.12);
+  background: rgba(255, 255, 255, 0.07);
   color: var(--primary);
   border-color: var(--primary);
   animation: blink 1.2s step-end infinite;
@@ -295,7 +295,7 @@ button.icon.ghost-danger:hover { color: var(--danger); opacity: 1; }
   margin: 0;
   color: var(--muted);
 }
-.log-add-form { background: rgba(0, 204, 68, 0.04); border-radius: var(--radius); padding: 0.25rem; }
+.log-add-form { background: rgba(255, 255, 255, 0.03); border-radius: var(--radius); padding: 0.25rem; }
 
 /* empty state */
 .empty {
