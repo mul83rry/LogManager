@@ -258,7 +258,7 @@ function buildBarChartSvg(byDay, taskColors) {
       lbl.setAttribute('y', chartBottom - totalBarH - 3);
       lbl.setAttribute('text-anchor', 'middle');
       lbl.setAttribute('font-size', '8');
-      lbl.setAttribute('fill', '#94a3b8');
+      lbl.setAttribute('fill', '#c0c0c0');
       lbl.textContent = fmtShort(dayTotal);
       svg.appendChild(lbl);
     }
@@ -270,7 +270,7 @@ function buildBarChartSvg(byDay, taskColors) {
     dayLbl.setAttribute('y', TOTAL_H - 3);
     dayLbl.setAttribute('text-anchor', 'middle');
     dayLbl.setAttribute('font-size', '8');
-    dayLbl.setAttribute('fill', '#64748b');
+    dayLbl.setAttribute('fill', '#aaaaaa');
     dayLbl.textContent = DAY_ABBR[d.getDay()] + ' ' + d.getDate();
     svg.appendChild(dayLbl);
   });
@@ -317,7 +317,7 @@ function buildDonutSvg(tasks, taskColors, totalSec) {
   txt.setAttribute('text-anchor', 'middle');
   txt.setAttribute('dominant-baseline', 'central');
   txt.setAttribute('font-size', '12');
-  txt.setAttribute('fill', '#e2e8f0');
+  txt.setAttribute('fill', '#e0e0e0');
   txt.setAttribute('font-weight', 'bold');
   txt.textContent = `${h}:${String(m).padStart(2, '0')}`;
   svg.appendChild(txt);
@@ -446,14 +446,15 @@ await initI18n();
 const { panelWidth } = await chrome.storage.local.get('panelWidth');
 if (panelWidth) document.body.style.minWidth = panelWidth + 'px';
 
-// Persist panel width on user drag-resize.
+// Persist panel width when the user drags the side-panel edge.
 let _resizeTimer;
-window.addEventListener('resize', () => {
+new ResizeObserver((entries) => {
+  const width = Math.round(entries[0].contentRect.width);
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(() => {
-    chrome.storage.local.set({ panelWidth: window.innerWidth });
+    chrome.storage.local.set({ panelWidth: width });
   }, 500);
-});
+}).observe(document.body);
 
 await refreshTasks();
 setInterval(() => updateElapsed(els.activeList), 1000);

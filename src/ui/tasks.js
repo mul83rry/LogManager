@@ -1,6 +1,9 @@
 import { send } from './messaging.js';
-import { formatDuration } from './util.js';
+import { formatDuration, formatJalaliDate } from './util.js';
 import { t } from '../lib/i18n.js';
+
+const FA_DAYS = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+const EN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export function renderTasks(activeEl, taskListEl, state, onRefresh) {
   renderActive(activeEl, state, onRefresh);
@@ -51,48 +54,102 @@ function renderTaskList(container, state, onRefresh) {
     return;
   }
 
+  // Group tasks by the date of their most recent log entry
+  const dayGroups = new Map();
+  const noDayTasks = [];
   for (const task of tasks) {
-    const card = document.createElement('div');
-    card.className = 'task';
-
-    // task header
-    const head = document.createElement('div');
-    head.className = 'row between task-head';
-    const titleSpan = makeEditableTitle(task.title, 'task-title', async (val) => {
-      await send('renameTask', { taskId: task.id, title: val });
-      onRefresh();
-    });
-    head.appendChild(titleSpan);
-
-    // project dot
-    const projects = state.projects || [];
-    head.appendChild(buildProjectBtn(task, projects, onRefresh));
-
-    const actions = document.createElement('div');
-    actions.className = 'row task-actions';
-    const addSubBtn = iconBtn('+', '', t('addSubtaskTitle'));
-    addSubBtn.addEventListener('click', () =>
-      promptInline(card, t('newSubtaskPlaceholder'), async (title) => {
-        await send('addSubtask', { taskId: task.id, title });
-        onRefresh();
-      }),
-    );
-    const delBtn = iconBtn('✕', 'ghost-danger', t('deleteTask'));
-    delBtn.addEventListener('click', () =>
-      confirmDelete(card, async () => {
-        await send('deleteTask', { taskId: task.id });
-        onRefresh();
-      }),
-    );
-    actions.append(addSubBtn, delBtn);
-    head.appendChild(actions);
-    card.appendChild(head);
-
-    for (const sub of task.subtasks) {
-      card.appendChild(buildSubtaskRow(task.id, sub, running.has(sub.id), onRefresh));
+    const day = getLastLogDay(task);
+    if (day) {
+      if (!dayGroups.has(day)) dayGroups.set(day, []);
+      dayGroups.get(day).push(task);
+    } else {
+      noDayTasks.push(task);
     }
-    container.appendChild(card);
   }
+
+  // Most-recent day first
+  const sortedDays = [...dayGroups.keys()].sort((a, b) => b.localeCompare(a));
+
+  for (const day of sortedDays) {
+    container.appendChild(buildDayHeader(day));
+    for (const task of dayGroups.get(day)) {
+      container.appendChild(buildTaskCard(task, running, state, onRefresh));
+    }
+  }
+
+  for (const task of noDayTasks) {
+    container.appendChild(buildTaskCard(task, running, state, onRefresh));
+  }
+}
+
+function getLastLogDay(task) {
+  let lastTs = null;
+  for (const sub of task.subtasks) {
+    for (const log of (sub.logs || [])) {
+      if (!lastTs || log.timestamp > lastTs) lastTs = log.timestamp;
+    }
+  }
+  if (!lastTs) return null;
+  const d = new Date(lastTs);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function buildDayHeader(day) {
+  const d = new Date(day + 'T12:00:00');
+  const isRtl = document.documentElement.getAttribute('dir') === 'rtl';
+  const dayName = isRtl ? FA_DAYS[d.getDay()] : EN_DAYS[d.getDay()];
+  const jalali = formatJalaliDate(d);
+  const header = document.createElement('div');
+  header.className = 'day-header';
+  header.innerHTML =
+    `<span class="day-name">${esc(dayName)}</span>` +
+    `<span class="day-date muted">${esc(jalali)} · ${esc(day)}</span>`;
+  return header;
+}
+
+function buildTaskCard(task, running, state, onRefresh) {
+  const card = document.createElement('div');
+  card.className = 'task';
+
+  // task header — title+dot grouped left, actions right
+  const head = document.createElement('div');
+  head.className = 'row between task-head';
+
+  const titleGroup = document.createElement('div');
+  titleGroup.className = 'row task-title-group';
+  const titleSpan = makeEditableTitle(task.title, 'task-title', async (val) => {
+    await send('renameTask', { taskId: task.id, title: val });
+    onRefresh();
+  });
+  titleGroup.appendChild(titleSpan);
+  const projects = state.projects || [];
+  titleGroup.appendChild(buildProjectBtn(task, projects, onRefresh));
+  head.appendChild(titleGroup);
+
+  const actions = document.createElement('div');
+  actions.className = 'row task-actions';
+  const addSubBtn = iconBtn('+', '', t('addSubtaskTitle'));
+  addSubBtn.addEventListener('click', () =>
+    promptInline(card, t('newSubtaskPlaceholder'), async (title) => {
+      await send('addSubtask', { taskId: task.id, title });
+      onRefresh();
+    }),
+  );
+  const delBtn = iconBtn('✕', 'ghost-danger', t('deleteTask'));
+  delBtn.addEventListener('click', () =>
+    confirmDelete(card, async () => {
+      await send('deleteTask', { taskId: task.id });
+      onRefresh();
+    }),
+  );
+  actions.append(addSubBtn, delBtn);
+  head.appendChild(actions);
+  card.appendChild(head);
+
+  for (const sub of task.subtasks) {
+    card.appendChild(buildSubtaskRow(task.id, sub, running.has(sub.id), onRefresh));
+  }
+  return card;
 }
 
 // ── subtask row ────────────────────────────────────────────────────────────
@@ -101,7 +158,6 @@ function buildSubtaskRow(taskId, sub, isRunning, onRefresh) {
   const wrap = document.createElement('div');
   wrap.className = 'subtask-wrap';
 
-  // main row
   const row = document.createElement('div');
   row.className = 'subtask';
 
@@ -111,15 +167,12 @@ function buildSubtaskRow(taskId, sub, isRunning, onRefresh) {
   });
   row.appendChild(subTitle);
 
-  // description toggle (≡)
   const descBtn = iconBtn('≡', 'ghost', t('addDescription'));
   descBtn.addEventListener('click', () => togglePanel(wrap, '.sub-desc-area'));
 
-  // log/time panel toggle (⏱)
   const logBtn = iconBtn('⏱', 'ghost', t('logsBtn'));
   logBtn.addEventListener('click', () => togglePanel(wrap, '.log-panel'));
 
-  // timer button (▶ / ■)
   const timerBtn = iconBtn(
     isRunning ? '■' : '▶',
     isRunning ? 'danger' : 'success',
@@ -131,7 +184,6 @@ function buildSubtaskRow(taskId, sub, isRunning, onRefresh) {
     onRefresh();
   });
 
-  // delete subtask (✕)
   const delBtn = iconBtn('✕', 'ghost-danger', t('deleteSubtask'));
   delBtn.addEventListener('click', () =>
     confirmDelete(wrap, async () => {
@@ -188,7 +240,6 @@ function buildLogPanel(taskId, sub, onRefresh) {
     panel.appendChild(buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh));
   }
 
-  // add manual interval button
   const addBtn = document.createElement('button');
   addBtn.className = 'ghost log-add-btn';
   addBtn.textContent = t('addInterval');
@@ -208,7 +259,6 @@ function buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh) {
   const startLog = startIdx != null ? sub.logs[startIdx] : null;
   const stopLog = stopIdx != null ? sub.logs[stopIdx] : null;
 
-  // duration display (recalculated live)
   const durSpan = document.createElement('span');
   durSpan.className = 'log-dur muted mono';
 
@@ -222,7 +272,7 @@ function buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh) {
   }
   refreshDur(startLog?.timestamp, stopLog?.timestamp);
 
-  // start row
+  // start row — label · input · confirm button
   const startRow = document.createElement('div');
   startRow.className = 'log-row';
   const startLabel = document.createElement('span');
@@ -232,16 +282,14 @@ function buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh) {
 
   if (startLog) {
     const startInput = makeDTInput(startLog.timestamp);
-    let debounce = null;
-    startInput.addEventListener('change', () => {
-      clearTimeout(debounce);
-      debounce = setTimeout(async () => {
-        const newTs = fromDatetimeLocal(startInput.value);
-        refreshDur(newTs, stopLog?.timestamp);
-        await send('updateLog', { taskId, subtaskId: sub.id, logIndex: startIdx, timestamp: newTs });
-      }, 400);
+    const startSave = iconBtn('✓', 'primary log-confirm-btn', t('saveTitle'));
+    startSave.addEventListener('click', async () => {
+      const newTs = fromDatetimeLocal(startInput.value);
+      refreshDur(newTs, stopLog?.timestamp);
+      await send('updateLog', { taskId, subtaskId: sub.id, logIndex: startIdx, timestamp: newTs });
     });
     startRow.appendChild(startInput);
+    startRow.appendChild(startSave);
   } else {
     const ph = document.createElement('span');
     ph.className = 'muted';
@@ -251,7 +299,7 @@ function buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh) {
   }
   wrap.appendChild(startRow);
 
-  // end row
+  // end row — label · input · confirm button
   const endRow = document.createElement('div');
   endRow.className = 'log-row';
   const endLabel = document.createElement('span');
@@ -261,16 +309,14 @@ function buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh) {
 
   if (stopLog) {
     const endInput = makeDTInput(stopLog.timestamp);
-    let debounce = null;
-    endInput.addEventListener('change', () => {
-      clearTimeout(debounce);
-      debounce = setTimeout(async () => {
-        const newTs = fromDatetimeLocal(endInput.value);
-        refreshDur(startLog?.timestamp, newTs);
-        await send('updateLog', { taskId, subtaskId: sub.id, logIndex: stopIdx, timestamp: newTs });
-      }, 400);
+    const endSave = iconBtn('✓', 'primary log-confirm-btn', t('saveTitle'));
+    endSave.addEventListener('click', async () => {
+      const newTs = fromDatetimeLocal(endInput.value);
+      refreshDur(startLog?.timestamp, newTs);
+      await send('updateLog', { taskId, subtaskId: sub.id, logIndex: stopIdx, timestamp: newTs });
     });
     endRow.appendChild(endInput);
+    endRow.appendChild(endSave);
   } else {
     const running = document.createElement('span');
     running.className = 'tag live';
@@ -279,14 +325,12 @@ function buildIntervalRow(taskId, sub, startIdx, stopIdx, onRefresh) {
     endRow.appendChild(running);
   }
 
-  // footer: duration + delete
   const footer = document.createElement('div');
   footer.className = 'log-footer row';
   footer.appendChild(durSpan);
 
   const delIntervalBtn = iconBtn('✕', 'ghost-danger', t('deleteInterval'));
   delIntervalBtn.addEventListener('click', async () => {
-    // Delete stop log first (higher index), then start log.
     const indices = [stopIdx, startIdx].filter((i) => i != null).sort((a, b) => b - a);
     for (const idx of indices) {
       await send('deleteLog', { taskId, subtaskId: sub.id, logIndex: idx });
@@ -344,7 +388,6 @@ function buildAddIntervalForm(panel, taskId, sub, onRefresh, addBtn) {
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
-/** Pair log entries into { startIdx, stopIdx } objects (indices into logs[]). */
 function pairLogsWithIndices(logs) {
   const pairs = [];
   let openIdx = null;
@@ -361,7 +404,6 @@ function pairLogsWithIndices(logs) {
   return pairs;
 }
 
-/** ISO timestamp → `<input type="datetime-local">` value (local time). */
 function toDatetimeLocal(isoStr) {
   const d = new Date(isoStr);
   const y = d.getFullYear();
@@ -372,7 +414,6 @@ function toDatetimeLocal(isoStr) {
   return `${y}-${mo}-${day}T${h}:${mi}`;
 }
 
-/** `<input type="datetime-local">` value → ISO UTC timestamp string. */
 function fromDatetimeLocal(localStr) {
   return new Date(localStr).toISOString();
 }
@@ -413,7 +454,8 @@ function buildProjectBtn(task, projects, onRefresh) {
   const btn = document.createElement('button');
   btn.className = 'icon ghost proj-dot-btn';
   btn.title = proj ? proj.title : t('assignProject');
-  btn.style.cssText = `width:14px;height:14px;min-width:14px;padding:0;border-radius:50%;` +
+  btn.style.cssText =
+    `width:14px;height:14px;min-width:14px;padding:0;border-radius:50%;` +
     `background:${proj ? proj.color : 'var(--border)'};border:none;flex-shrink:0;`;
 
   btn.addEventListener('click', (e) => {
@@ -423,10 +465,36 @@ function buildProjectBtn(task, projects, onRefresh) {
     const menu = document.createElement('div');
     menu.className = 'proj-menu';
 
+    // Color editor for the currently assigned project
+    if (proj) {
+      const colorRow = document.createElement('div');
+      colorRow.className = 'proj-menu-item proj-color-row';
+      const colorInput = document.createElement('input');
+      colorInput.type = 'color';
+      colorInput.value = proj.color;
+      colorInput.style.cssText =
+        'width:20px;height:20px;border:none;padding:0;background:none;cursor:pointer;' +
+        'border-radius:50%;flex-shrink:0;';
+      const colorLabel = document.createElement('span');
+      colorLabel.textContent = proj.title;
+      colorInput.addEventListener('change', async () => {
+        await send('updateProject', { id: proj.id, color: colorInput.value });
+        menu.remove();
+        onRefresh();
+      });
+      colorRow.append(colorInput, colorLabel);
+      menu.appendChild(colorRow);
+
+      const sep = document.createElement('div');
+      sep.style.cssText = 'border-top:1px solid var(--border);margin:0.25rem 0;';
+      menu.appendChild(sep);
+    }
+
     const allOpts = [{ id: null, title: t('noProject'), color: 'var(--border)' }, ...projects];
     for (const p of allOpts) {
       const item = document.createElement('div');
       item.className = 'proj-menu-item';
+      if (p.id === task.projectId) item.style.opacity = '0.5';
       item.innerHTML =
         `<span class="proj-dot" style="background:${p.color}"></span>${esc(p.title)}`;
       item.addEventListener('click', async (ev) => {
