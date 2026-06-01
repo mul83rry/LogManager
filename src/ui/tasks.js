@@ -80,11 +80,13 @@ function renderTaskList(container, state, onRefresh) {
   const sortedDays = [...dayGroups.keys()].sort((a, b) => a.localeCompare(b));
 
   for (const day of sortedDays) {
-    const header = buildDayHeader(day);
+    const dayTasks = dayGroups.get(day)
+      .sort((a, b) => (getEffectiveCreatedAt(a) || '').localeCompare(getEffectiveCreatedAt(b) || ''));
+    const daySeconds = dayTasks.reduce((s, t) => s + calcTaskSeconds(t), 0);
+    const header = buildDayHeader(day, daySeconds);
     const group = document.createElement('div');
     group.className = 'day-group';
 
-    // Restore collapsed state from sessionStorage
     const isCollapsed = sessionStorage.getItem('dc-' + day) === '1';
     if (isCollapsed) {
       group.hidden = true;
@@ -98,8 +100,6 @@ function renderTaskList(container, state, onRefresh) {
       sessionStorage.setItem('dc-' + day, nowCollapsed ? '1' : '0');
     });
 
-    const dayTasks = dayGroups.get(day)
-      .sort((a, b) => (getEffectiveCreatedAt(a) || '').localeCompare(getEffectiveCreatedAt(b) || ''));
     container.appendChild(header);
     for (const task of dayTasks) {
       group.appendChild(buildTaskCard(task, running, state, onRefresh));
@@ -113,6 +113,15 @@ function renderTaskList(container, state, onRefresh) {
 }
 
 /** Returns the earliest available timestamp for a task (createdAt or first log). */
+/** Total completed seconds across all subtask logs for a task. */
+function calcTaskSeconds(task) {
+  return task.subtasks.reduce((sum, sub) => {
+    return sum + (sub.logs || [])
+      .filter((l) => l.type === 'system_stop')
+      .reduce((s, l) => s + (l.duration_seconds || 0), 0);
+  }, 0);
+}
+
 function getEffectiveCreatedAt(task) {
   if (task.createdAt) return task.createdAt;
   let firstTs = null;
@@ -132,15 +141,17 @@ function getCreationDay(task) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function buildDayHeader(day) {
+function buildDayHeader(day, totalSeconds = 0) {
   const d = new Date(day + 'T12:00:00');
   const dayName = isRtl() ? FA_DAYS[d.getDay()] : EN_DAYS[d.getDay()];
   const jalali = jalaliStr(d);
+  const durStr = totalSeconds > 0 ? formatDuration(totalSeconds) : '';
   const header = document.createElement('div');
   header.className = 'day-header';
   header.innerHTML =
     `<span class="day-name">${esc(dayName)}</span>` +
     `<span class="day-date muted">${esc(jalali)} · ${esc(day)}</span>` +
+    (durStr ? `<span class="day-dur mono">${esc(durStr)}</span>` : '') +
     `<span class="day-chevron">▾</span>`;
   return header;
 }
@@ -166,6 +177,16 @@ function buildTaskCard(task, running, state, onRefresh) {
 
   const actions = document.createElement('div');
   actions.className = 'row task-actions';
+
+  // Task total duration (logged time across all subtasks)
+  const taskSecs = calcTaskSeconds(task);
+  if (taskSecs > 0) {
+    const durSpan = document.createElement('span');
+    durSpan.className = 'task-total-dur muted mono';
+    durSpan.textContent = formatDuration(taskSecs);
+    actions.appendChild(durSpan);
+  }
+
   const addSubBtn = iconBtn('+', '', t('addSubtaskTitle'));
   addSubBtn.addEventListener('click', () =>
     promptInline(card, t('newSubtaskPlaceholder'), async (title) => {

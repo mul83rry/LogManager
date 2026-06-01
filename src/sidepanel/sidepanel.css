@@ -48,6 +48,12 @@ body {
   transition: color 0.15s;
 }
 .day-date { font-size: 0.7rem; }
+.day-dur {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
 .day-chevron {
   margin-inline-start: auto;
   font-size: 0.6rem;
@@ -56,6 +62,13 @@ body {
   display: inline-block;
 }
 .day-header.collapsed .day-chevron { transform: rotate(-90deg); }
+
+/* task total duration badge in the actions row */
+.task-total-dur {
+  font-size: 0.78rem;
+  white-space: nowrap;
+  padding-inline-end: 0.3rem;
+}
 
 /* task creation date row */
 .task-created-row {
