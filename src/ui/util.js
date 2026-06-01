@@ -6,6 +6,7 @@ export {
   formatJalaliDate,
   formatJalaliDateTime,
   formatTime,
+  buildMarkdownReport,
 } from '../lib/format.js';
 
 export function escapeHtml(str) {

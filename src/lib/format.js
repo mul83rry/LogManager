@@ -46,6 +46,48 @@ export function formatDuration(totalSeconds) {
  *
  * Tasks/subtasks with no completed interval are skipped.
  */
+const FA_DAYS = ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+const EN_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/**
+ * Build a Markdown daily report.
+ * Groups logged time by calendar day; shows task totals, subtask lines, and descriptions.
+ */
+export function buildMarkdownReport(report, from, to) {
+  const byDay = report.byDay || [];
+  const lines = [];
+  lines.push('# گزارش زمان‌بندی');
+  lines.push(`**بازه:** ${formatJalaliDate(from)} — ${formatJalaliDate(to)}`);
+  lines.push('');
+
+  for (const { day, tasks } of byDay) {
+    const date = new Date(day + 'T12:00:00');
+    const dow = date.getDay();
+    const dayTotal = tasks.reduce((s, t) => s + t.seconds, 0);
+    lines.push('---');
+    lines.push('');
+    lines.push(`## ${FA_DAYS[dow]} | ${EN_DAYS[dow]} | ${day} | ${formatJalaliDate(date)}`);
+    lines.push('');
+
+    for (const task of [...tasks].sort((a, b) => b.seconds - a.seconds)) {
+      lines.push(`- **${task.title}** \`${formatDuration(task.seconds)}\``);
+      for (const sub of task.subtasks) {
+        lines.push(`  - ${sub.title} \`${formatDuration(sub.seconds)}\``);
+        if (sub.description) lines.push(`    > ${sub.description}`);
+      }
+    }
+
+    lines.push('');
+    lines.push(`**مجموع روز:** \`${formatDuration(dayTotal)}\``);
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push('');
+  lines.push(`**مجموع کل:** \`${formatDuration(report.totalSeconds)}\``);
+  return lines.join('\n');
+}
+
 export function buildTextExport(report) {
   const lines = [];
   for (const task of report.tasks) {

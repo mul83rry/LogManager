@@ -42,6 +42,7 @@ const STRINGS = {
     copyBtn: 'کپی',
     copied: 'کپی شد!',
     downloadBtn: 'دانلود',
+    downloadMd: 'دانلود MD',
     // tasks (shared renderer)
     newSubtaskPlaceholder: 'نام ساب‌تسک…',
     editTitleHint: 'کلیک برای ویرایش نام',
@@ -136,6 +137,7 @@ const STRINGS = {
     copyBtn: 'Copy',
     copied: 'Copied!',
     downloadBtn: 'Download',
+    downloadMd: 'Download MD',
     newSubtaskPlaceholder: 'New subtask name…',
     editTitleHint: 'Click to rename',
     startTimerTitle: 'Start',

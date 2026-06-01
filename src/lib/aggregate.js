@@ -123,12 +123,13 @@ export function intervalRange(intervals) {
 }
 
 /**
- * Daily breakdown: returns [{ day: 'YYYY-MM-DD', tasks: [{ id, title, projectId, seconds }] }]
- * sorted by day ascending. Each interval is assigned to the day its start timestamp falls in.
+ * Daily breakdown: returns [{ day: 'YYYY-MM-DD', tasks: [{ id, title, projectId, seconds,
+ *   subtasks: [{ id, title, description, seconds }] }] }] sorted by day ascending.
+ * Each interval is assigned to the day its start timestamp falls in.
  */
 export function aggregateByDay(files) {
   const merged = mergeWeekFiles(files);
-  const dayMap = new Map(); // 'YYYY-MM-DD' -> Map<taskId, entry>
+  const dayMap = new Map(); // 'YYYY-MM-DD' -> Map<taskId, taskEntry>
 
   for (const task of merged) {
     for (const sub of task.subtasks) {
@@ -137,19 +138,32 @@ export function aggregateByDay(files) {
         const day = iv.start.slice(0, 10);
         if (!dayMap.has(day)) dayMap.set(day, new Map());
         const tMap = dayMap.get(day);
-        const cur = tMap.get(task.id);
-        if (cur) {
-          cur.seconds += iv.duration;
-        } else {
-          tMap.set(task.id, { id: task.id, title: task.title, projectId: task.projectId, seconds: iv.duration });
+
+        if (!tMap.has(task.id)) {
+          tMap.set(task.id, {
+            id: task.id, title: task.title, projectId: task.projectId,
+            seconds: 0, subtasks: new Map(),
+          });
         }
+        const te = tMap.get(task.id);
+        te.seconds += iv.duration;
+
+        if (!te.subtasks.has(sub.id)) {
+          te.subtasks.set(sub.id, {
+            id: sub.id, title: sub.title, description: sub.description || '', seconds: 0,
+          });
+        }
+        te.subtasks.get(sub.id).seconds += iv.duration;
       }
     }
   }
 
   return [...dayMap.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, tMap]) => ({ day, tasks: [...tMap.values()] }));
+    .map(([day, tMap]) => ({
+      day,
+      tasks: [...tMap.values()].map((t) => ({ ...t, subtasks: [...t.subtasks.values()] })),
+    }));
 }
 
 /**

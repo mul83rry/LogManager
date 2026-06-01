@@ -1,6 +1,6 @@
 import { send } from '../ui/messaging.js';
 import { formatDuration, formatJalaliDateTime, escapeHtml, todayInputValue } from '../ui/util.js';
-import { buildTextExport } from '../lib/format.js';
+import { buildTextExport, buildMarkdownReport } from '../lib/format.js';
 import { renderTasks, updateElapsed } from '../ui/tasks.js';
 import { initI18n, watchLang, t, s } from '../lib/i18n.js';
 
@@ -24,6 +24,9 @@ els.from.value = todayInputValue();
 els.to.value = todayInputValue();
 
 let state = null;
+let currentReport = null;
+let currentFrom = null;
+let currentTo = null;
 
 // ─── tabs ──────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach((btn) =>
@@ -138,6 +141,9 @@ async function loadRange(from, to) {
       fromDate: from.toISOString(),
       toDate: to.toISOString(),
     });
+    currentReport = report;
+    currentFrom = from;
+    currentTo = to;
     renderReport(report);
     renderSummary(report, state?.projects || []);
     const d0 = formatJalaliDateTime(from).split(' ')[0];
@@ -409,6 +415,19 @@ function renderReport(report) {
   }
 }
 
+// ─── MD download ───────────────────────────────────────────────────────────
+document.getElementById('download-md').addEventListener('click', () => {
+  if (!currentReport || !currentFrom || !currentTo) return;
+  const md = buildMarkdownReport(currentReport, currentFrom, currentTo);
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `time-report-${toInputValue(currentFrom)}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
 // ─── helpers ───────────────────────────────────────────────────────────────
 function showError(err) {
   els.error.textContent = err || '';
@@ -422,6 +441,20 @@ function p2(n) { return String(n).padStart(2, '0'); }
 // ─── init ──────────────────────────────────────────────────────────────────
 watchLang();
 await initI18n();
+
+// Restore persisted panel width; default is 640px (set via CSS).
+const { panelWidth } = await chrome.storage.local.get('panelWidth');
+if (panelWidth) document.body.style.minWidth = panelWidth + 'px';
+
+// Persist panel width on user drag-resize.
+let _resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    chrome.storage.local.set({ panelWidth: window.innerWidth });
+  }, 500);
+});
+
 await refreshTasks();
 setInterval(() => updateElapsed(els.activeList), 1000);
 applyPreset('this-week');
