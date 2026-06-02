@@ -34,7 +34,7 @@ export class OneDriveProvider {
     const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
     const challenge = base64url(await sha256(verifier));
 
-    const authUrl =
+    const buildUrl = (prompt) =>
       `${AUTHORITY}/authorize?` +
       new URLSearchParams({
         client_id: this.clientId,
@@ -43,13 +43,26 @@ export class OneDriveProvider {
         scope: SCOPES,
         code_challenge: challenge,
         code_challenge_method: 'S256',
-        prompt: 'select_account',
+        prompt,
       }).toString();
 
-    const redirectResponse = await chrome.identity.launchWebAuthFlow({
-      url: authUrl,
-      interactive: true,
-    });
+    // 1. Try silent auth — picks up the Edge/Windows signed-in Microsoft account
+    //    session with no UI if the user is already authenticated.
+    let redirectResponse;
+    try {
+      redirectResponse = await chrome.identity.launchWebAuthFlow({
+        url: buildUrl('none'),
+        interactive: false,
+      });
+    } catch {
+      // Silent attempt failed (no active session or consent needed).
+      // Fall back to the full interactive login dialog.
+      redirectResponse = await chrome.identity.launchWebAuthFlow({
+        url: buildUrl('select_account'),
+        interactive: true,
+      });
+    }
+
     const code = new URL(redirectResponse).searchParams.get('code');
     if (!code) throw new Error('OneDrive authorization was cancelled.');
 
