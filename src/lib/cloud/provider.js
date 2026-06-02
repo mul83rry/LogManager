@@ -1,36 +1,32 @@
 // Cloud provider abstraction.
 //
-// The PRD stores weekly JSON files in a cloud folder (e.g. OneDrive
-// `/Apps/EdgeTimeTracker/`). Everything above this layer only ever deals with
-// "a flat folder of named JSON files", so swapping providers (OneDrive, a
-// local simulator for offline use, or anything else later) changes nothing
-// else in the codebase.
-//
 // A provider implements:
 //   isConnected(): Promise<boolean>
-//   connect(): Promise<void>            // interactive auth, where applicable
+//   connect(): Promise<void>
 //   disconnect(): Promise<void>
-//   list(): Promise<string[]>           // file names in the app folder
-//   read(name): Promise<string|null>    // file contents, or null if missing
+//   list(): Promise<string[]>
+//   read(name): Promise<string|null>
 //   write(name, contents): Promise<void>
 //   remove(name): Promise<void>
 
 import { LocalProvider } from './local-provider.js';
 import { OneDriveProvider } from './onedrive-provider.js';
+import { ServerProvider } from './server-provider.js';
 
 export const PROVIDER_IDS = {
   LOCAL: 'local',
   ONEDRIVE: 'onedrive',
+  SERVER: 'server',
 };
 
 const SETTINGS_KEY = 'cloudSettings';
 
-/** Read persisted cloud settings (which provider, OneDrive client id, ...). */
 export async function getCloudSettings() {
   const { [SETTINGS_KEY]: settings } = await chrome.storage.local.get(SETTINGS_KEY);
   return {
     provider: PROVIDER_IDS.LOCAL,
     oneDriveClientId: '',
+    serverUrl: '',
     folder: 'EdgeTimeTracker',
     ...(settings || {}),
   };
@@ -43,12 +39,13 @@ export async function setCloudSettings(patch) {
   return next;
 }
 
-/** Instantiate the provider selected in settings. */
 export async function getProvider() {
   const settings = await getCloudSettings();
   switch (settings.provider) {
     case PROVIDER_IDS.ONEDRIVE:
       return new OneDriveProvider(settings);
+    case PROVIDER_IDS.SERVER:
+      return new ServerProvider(settings);
     case PROVIDER_IDS.LOCAL:
     default:
       return new LocalProvider(settings);

@@ -62,11 +62,26 @@
         <label class="field">
           <span data-i18n="providerLabel">محل ذخیره‌سازی</span>
           <select id="provider">
-            <option value="local" data-i18n="providerLocal">محلی (بدون نیاز به تنظیم)</option>
+            <option value="local"    data-i18n="providerLocal">محلی (بدون نیاز به تنظیم)</option>
+            <option value="server"   data-i18n="providerServer">سرور اختصاصی (Google)</option>
             <option value="onedrive" data-i18n="providerOneDrive">OneDrive</option>
           </select>
         </label>
 
+        <!-- server config -->
+        <div id="server-config" hidden>
+          <label class="field">
+            <span data-i18n="serverUrlLabel">آدرس سرور</span>
+            <input type="url" id="server-url" class="grow"
+                   data-i18n-ph="serverUrlPlaceholder" placeholder="https://..." />
+          </label>
+          <p class="muted" style="font-size:0.8rem">
+            <span data-i18n="redirectUriLabel">Redirect URI</span>
+            <code id="redirect-uri" class="mono"></code>
+          </p>
+        </div>
+
+        <!-- onedrive config -->
         <div id="onedrive-config" hidden>
           <label class="field">
             <span data-i18n="clientIdLabel">شناسه کلاینت (Client ID)</span>
@@ -75,13 +90,13 @@
           </label>
           <p class="muted">
             <span data-i18n="redirectUriLabel">Redirect URI</span>
-            <code id="redirect-uri" class="mono"></code>
+            <code id="redirect-uri-od" class="mono"></code>
           </p>
         </div>
 
         <div class="row">
           <button id="save-provider" class="primary" data-i18n="saveProviderBtn">ذخیره تنظیمات</button>
-          <button id="connect" class="success" hidden data-i18n="connectBtn">اتصال به OneDrive</button>
+          <button id="connect" class="success" hidden></button>
           <button id="disconnect" class="danger" hidden data-i18n="disconnectBtn">قطع اتصال</button>
           <span id="cloud-status" class="tag"></span>
         </div>

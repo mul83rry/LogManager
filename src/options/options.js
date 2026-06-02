@@ -8,22 +8,27 @@ function esc(str) {
 }
 
 const els = {
-  langSelect: document.getElementById('lang-select'),
-  deviceId: document.getElementById('device-id'),
-  deviceLabel: document.getElementById('device-label'),
-  filePreview: document.getElementById('file-preview'),
-  provider: document.getElementById('provider'),
+  langSelect:    document.getElementById('lang-select'),
+  deviceId:      document.getElementById('device-id'),
+  deviceLabel:   document.getElementById('device-label'),
+  filePreview:   document.getElementById('file-preview'),
+  provider:      document.getElementById('provider'),
+  serverConfig:  document.getElementById('server-config'),
+  serverUrl:     document.getElementById('server-url'),
+  redirectUri:   document.getElementById('redirect-uri'),
   onedriveConfig: document.getElementById('onedrive-config'),
-  clientId: document.getElementById('client-id'),
-  redirectUri: document.getElementById('redirect-uri'),
-  connect: document.getElementById('connect'),
-  disconnect: document.getElementById('disconnect'),
-  cloudStatus: document.getElementById('cloud-status'),
-  message: document.getElementById('message'),
-  error: document.getElementById('error'),
+  clientId:      document.getElementById('client-id'),
+  redirectUriOd: document.getElementById('redirect-uri-od'),
+  connect:       document.getElementById('connect'),
+  disconnect:    document.getElementById('disconnect'),
+  cloudStatus:   document.getElementById('cloud-status'),
+  message:       document.getElementById('message'),
+  error:         document.getElementById('error'),
 };
 
-els.redirectUri.textContent = chrome.identity?.getRedirectURL?.() || '(unavailable)';
+const extensionRedirectUri = chrome.identity?.getRedirectURL?.() || '(unavailable)';
+els.redirectUri.textContent   = extensionRedirectUri;
+els.redirectUriOd.textContent = extensionRedirectUri;
 
 function notify(msg) {
   els.message.textContent = msg;
@@ -42,20 +47,29 @@ async function load() {
   els.filePreview.textContent = `${state.filePrefix}_W${w}_Y${state.week.year}.json`;
   els.provider.value = state.cloud.provider;
   els.clientId.value = state.cloud.oneDriveClientId || '';
+  els.serverUrl.value = state.cloud.serverUrl || '';
   syncProviderUi(state.cloud);
 }
 
 function syncProviderUi(cloud) {
-  const isOneDrive = els.provider.value === 'onedrive';
-  els.onedriveConfig.hidden = !isOneDrive;
-  els.connect.hidden = !(isOneDrive && !cloud.connected);
-  els.disconnect.hidden = !(isOneDrive && cloud.connected);
-  if (!isOneDrive) {
+  const p = els.provider.value;
+  els.serverConfig.hidden   = p !== 'server';
+  els.onedriveConfig.hidden = p !== 'onedrive';
+
+  if (p === 'local') {
+    els.connect.hidden    = true;
+    els.disconnect.hidden = true;
     els.cloudStatus.textContent = t('statusLocal');
-    els.cloudStatus.className = 'tag';
+    els.cloudStatus.className   = 'tag';
   } else {
-    els.cloudStatus.textContent = cloud.connected ? t('statusConnected') : t('statusOffline');
-    els.cloudStatus.className = cloud.connected ? 'tag live' : 'tag';
+    const connected = cloud.connected;
+    els.connect.hidden    = connected;
+    els.disconnect.hidden = !connected;
+    els.cloudStatus.textContent = connected ? t('statusConnected') : t('statusOffline');
+    els.cloudStatus.className   = connected ? 'tag live' : 'tag';
+
+    // label connect button per provider
+    els.connect.textContent = p === 'server' ? t('connectServerBtn') : t('connectBtn');
   }
 }
 
@@ -64,7 +78,6 @@ els.provider.addEventListener('change', () => syncProviderUi({ connected: false 
 // ── language section ────────────────────────────────────────────────────────
 els.langSelect.addEventListener('change', async () => {
   await setLang(els.langSelect.value);
-  // watchLang() fires window.location.reload() via storage event.
 });
 
 // ── device section ──────────────────────────────────────────────────────────
@@ -82,7 +95,11 @@ document.getElementById('save-provider').addEventListener('click', async () => {
   try {
     showError('');
     await send('setCloudSettings', {
-      patch: { provider: els.provider.value, oneDriveClientId: els.clientId.value.trim() },
+      patch: {
+        provider: els.provider.value,
+        oneDriveClientId: els.clientId.value.trim(),
+        serverUrl: els.serverUrl.value.trim(),
+      },
     });
     notify(t('msgCloudSaved'));
     await load();
