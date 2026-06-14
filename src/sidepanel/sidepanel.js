@@ -45,6 +45,15 @@ document.getElementById('open-options').addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
 });
 
+document.getElementById('open-window').addEventListener('click', () => {
+  chrome.windows.create({
+    url: chrome.runtime.getURL('src/sidepanel/sidepanel.html'),
+    type: 'popup',
+    width: 780,
+    height: 700,
+  });
+});
+
 // ─── task tab ──────────────────────────────────────────────────────────────
 async function submitNewTask() {
   const title = els.newTaskInput.value.trim();

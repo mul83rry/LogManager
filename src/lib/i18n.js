@@ -18,6 +18,7 @@ const STRINGS = {
     // popup
     appName: 'ردیاب زمان',
     openDashboard: 'باز کردن داشبورد',
+    openWindowBtn: 'باز در پنجره جدید',
     weekLabel: (w, y) => `هفته ${w} / ${y}`,
     deviceLine: (p) => `دستگاه: ${p}`,
     newTaskPlaceholder: 'نام تسک جدید…',
@@ -119,6 +120,7 @@ const STRINGS = {
     dir: 'ltr',
     appName: 'Time Tracker',
     openDashboard: 'Open Dashboard',
+    openWindowBtn: 'Open in new window',
     weekLabel: (w, y) => `Week ${w} / ${y}`,
     deviceLine: (p) => `Device: ${p}`,
     newTaskPlaceholder: 'New task name…',

@@ -30,7 +30,7 @@
     "page": "src/options/options.html",
     "open_in_tab": true
   },
-  "permissions": ["storage", "alarms", "sidePanel", "identity", "notifications"],
+  "permissions": ["storage", "alarms", "sidePanel", "identity", "notifications", "windows"],
   "host_permissions": [
     "https://graph.microsoft.com/*",
     "https://login.microsoftonline.com/*"

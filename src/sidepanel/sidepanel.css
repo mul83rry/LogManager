@@ -1,6 +1,22 @@
 body {
   padding: 0.85rem;
-  min-width: 640px;
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+/* header — keep action buttons always visible */
+header h1 {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+}
+header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
 }
 
 /* tabs */
